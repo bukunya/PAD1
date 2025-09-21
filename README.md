@@ -1,6 +1,6 @@
 <!-- PROJECT LOGO -->
 <div align="center">
-  <img src="public/assets/drsn.png" alt="Dimes raja singa njir" width="200">
+  <img src="public/drsn.png" alt="Dimes raja singa njir" width="200">
   
   <h1 align="center">Proyek Aplikasi Tak Berdasar?</h1>
   
