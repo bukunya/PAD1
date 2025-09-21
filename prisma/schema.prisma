@@ -13,62 +13,128 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
- 
+
+// Enum untuk role pengguna
+enum Role {
+  MAHASISWA
+  DOSEN
+  ADMIN
+}
+
+// Enum untuk status pengajuan ujian
+enum StatusUjian {
+  MENUNGGU_VERIFIKASI
+  DIJADWALKAN
+  DITOLAK
+  SELESAI
+}
+
+// Model untuk Pengguna (User)
+// Menyimpan data dasar pengguna yang didapat dari Google OAuth
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  username      String?         @unique
-  email         String?         @unique
-  emailVerified DateTime?
+  email         String?   @unique
+  emailVerified DateTime? // ADDED: This field is required by the Auth.js adapter
   image         String?
+  role          Role      @default(MAHASISWA) // Role default adalah MAHASISWA
   accounts      Account[]
   sessions      Session[]
-  // Optional for WebAuthn support
- 
+
+  // Relasi sebagai mahasiswa yang mengajukan ujian
+  ujianMahasiswa Ujian[] @relation("UjianMahasiswa")
+
+  // Relasi sebagai dosen pembimbing
+  ujianDosenPembimbing Ujian[] @relation("UjianDosenPembimbing")
+
+  // Relasi sebagai dosen penguji
+  ujianDosenPenguji UjianDosenPenguji[]
+}
+
+// Model untuk Ujian (Exam)
+// Model sentral yang menampung semua data terkait pengajuan ujian
+model Ujian {
+  id        String      @id @default(cuid())
+  judul     String
+  berkasUrl String // URL ke file berkas ujian yang diupload
+  status    StatusUjian @default(MENUNGGU_VERIFIKASI)
+  jadwal    DateTime?   // Jadwal ujian, diisi oleh admin
+
+  // Relasi ke mahasiswa
+  mahasiswaId String
+  mahasiswa   User   @relation("UjianMahasiswa", fields: [mahasiswaId], references: [id])
+
+  // Relasi ke dosen pembimbing
+  dosenPembimbingId String
+  dosenPembimbing   User   @relation("UjianDosenPembimbing", fields: [dosenPembimbingId], references: [id])
+
+  // Relasi Many-to-Many dengan Dosen Penguji
+  dosenPenguji UjianDosenPenguji[]
+
+  // Relasi One-to-One dengan Berita Acara
+  beritaAcara BeritaAcara?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
+// Model join untuk relasi Many-to-Many antara Ujian dan Dosen Penguji
+// Dibuat agar bisa menambahkan metadata tambahan jika diperlukan di masa depan
+model UjianDosenPenguji {
+  ujianId String
+  dosenId String
+
+  ujian Ujian @relation(fields: [ujianId], references: [id])
+  dosen User  @relation(fields: [dosenId], references: [id])
+
+  assignedAt DateTime @default(now())
+  // assignedById String // Opsional: Menyimpan ID admin yang menugaskan
+
+  @@id([ujianId, dosenId])
+}
+
+// Model untuk Berita Acara
+// Menyimpan hasil dan catatan dari ujian yang telah dilaksanakan
+model BeritaAcara {
+  id      String @id @default(cuid())
+  catatan String
+  fileUrl String // URL ke file berita acara yang sudah ditandatangani
+
+  // Relasi One-to-One dengan Ujian
+  ujianId String @unique
+  ujian   Ujian  @relation(fields: [ujianId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+
+// --- MODEL UNTUK AUTH.JS v5 ---
+// Model-model di bawah ini wajib ada untuk AuthJS v5 (sebelumnya NextAuth)
+
 model Account {
-  id                       String  @id @default(cuid())
-  userId                   String  @unique
-  type                     String
-  provider                 String
-  providerAccountId        String
-  refresh_token            String?
-  access_token             String?
-  expires_at               Int?
-  token_type               String?
-  scope                    String?
-  id_token                 String?
-  session_state            String?
-  refresh_token_expires_in Int?
-  user                     User?   @relation(fields: [userId], references: [id])
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
- 
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
-  @@index([userId])
 }
- 
+
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id])
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
- 
-  @@index([userId])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
- 
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
- 
-  @@unique([identifier, token])
-}
+
