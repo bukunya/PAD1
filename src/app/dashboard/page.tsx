@@ -1,55 +1,93 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import StatusCard from "@/components/dashboard/statusCard";
+import StatusTimeline from "@/components/dashboard/statusTimeline";
+import CalendarWidget from "@/components/dashboard/calendar";
+import JadwalTable from "@/components/dashboard/jadwalTabel";
 
-export default function Page() {
+// Loading component untuk Suspense
+function DashboardLoading() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+    <div className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-6 bg-gray-200 rounded"></div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-6 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Server Component
+async function DashboardContent() {
+  const session = await auth();
+  if (!session?.user) redirect("/auth/signin");
+
+  // Fetch data dari backend API
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+
+  const res = await fetch(new URL("/api/dashboard", baseUrl), {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal mengambil data dashboard");
+  }
+
+  const { statusPengajuan, jadwalUjian, agenda } = await res.json();
+
+  // derive status terakhir
+  const latest = statusPengajuan?.[0];
+  const statusUjian = latest ? latest.status : "Belum ada pengajuan";
+  const ruangUjian = latest?.ruangUjian || "Belum ada ruangan";
+
+  return (
+    <main className="p-6 space-y-8">
+  {/* Grid utama */}
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min">
+    {/* Kalender */}
+    <div className="lg:row-span-2">
+      <CalendarWidget agenda={agenda} />
+    </div>
+
+    {/* Status & Ruangan */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:col-span-2 gap-6">
+      <StatusCard
+        title="Status Pengajuan Ujian"
+        value={statusUjian}
+        type="status"
+        index={0}
+      />
+      <StatusCard
+        title="Tempat Ruang Ujian"
+        value={ruangUjian}
+        type="ruangan"
+        index={1}
+      />
+    </div>
+
+    {/* Timeline */}
+    <div className="lg:col-span-2">
+      <StatusTimeline statusList={statusPengajuan} />
+    </div>
+  </div>
+
+  {/* Jadwal Tabel */}
+  <JadwalTable jadwalList={jadwalUjian} />
+</main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
+  );
 }

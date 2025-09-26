@@ -8,56 +8,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     }),
   ],
-  // We use the 'database' session strategy by default with an adapter.
-  // 'events' are used to handle actions like user creation.
+  pages: {
+    signIn: "/login", 
+  },
   events: {
     async createUser({ user }) {
-      // 1. Determine the role based on the user's email domain
       const role: Role = user.email?.endsWith("@ugm.ac.id")
         ? Role.DOSEN
         : Role.MAHASISWA;
 
-      // 2. Update the newly created user with the correct role
-      // The Prisma adapter creates the user with the default role first,
-      // so we update it immediately after.
       await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          role: role,
-        },
+        where: { id: user.id },
+        data: { role },
       });
     },
   },
   callbacks: {
-    // This callback is used to control if a user is allowed to sign in.
     async signIn({ profile }) {
-      if (!profile?.email) {
-        throw new Error("No email found in profile");
-      }
-
-      // Check for allowed UGM email domains
+      if (!profile?.email) return false;
       const allowedDomains = ["ugm.ac.id", "mail.ugm.ac.id"];
       const userDomain = profile.email.split("@")[1];
-
-      if (allowedDomains.includes(userDomain)) {
-        return true; // Allow sign-in
-      } else {
-        // You can return a specific error page or simply false
-        return false; // Prevent sign-in
-      }
+      return allowedDomains.includes(userDomain);
     },
-
-    // This callback adds the custom user data (like role) to the session object.
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        session.user.role = user.role; // The 'user' object comes from the database
+        session.user.role = user.role;
       }
       return session;
     },
