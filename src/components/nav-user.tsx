@@ -3,7 +3,7 @@
 import { signOut } from "next-auth/react";
 import {
   BadgeCheck,
-  Bell,
+  User,
   ChevronsUpDown,
   CreditCard,
   LogOut,
@@ -27,6 +27,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import { useSession } from "next-auth/react";
+
 export function NavUser({
   user,
 }: {
@@ -42,6 +44,11 @@ export function NavUser({
     signOut({ callbackUrl: "/" });
   };
 
+  const { data: session } = useSession();
+  if (!session) {
+    return null;
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -49,7 +56,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-10"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -65,8 +72,8 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg z-50"
+            side={isMobile ? "bottom" : "top"}
             align="end"
             sideOffset={4}
           >
@@ -85,28 +92,21 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Sparkles />
+              {session.user?.role
+                ? session.user.role.charAt(0).toUpperCase() +
+                  session.user.role.slice(1).toLowerCase()
+                : "Tidak ada role"}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => window.location.replace("/profil")}
+            >
+              <User />
+              Profil
+            </DropdownMenuItem>
+
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out

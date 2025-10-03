@@ -3,8 +3,15 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT,
     "email" TEXT,
+    "emailVerified" DATETIME,
     "image" TEXT,
-    "role" TEXT NOT NULL DEFAULT 'MAHASISWA'
+    "role" TEXT NOT NULL DEFAULT 'MAHASISWA',
+    "nim" TEXT,
+    "prodi" TEXT,
+    "departemen" TEXT DEFAULT 'Departemen Teknik Elektro dan Informatika',
+    "telepon" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
@@ -12,11 +19,18 @@ CREATE TABLE "Ujian" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "judul" TEXT NOT NULL,
     "berkasUrl" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'MENUNGGU_VERIFIKASI',
-    "jadwal" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "mahasiswaId" TEXT NOT NULL,
     "dosenPembimbingId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" TEXT NOT NULL DEFAULT 'MENUNGGU_VERIFIKASI',
+    "komentarAdmin" TEXT,
+    "tanggalUjian" DATETIME,
+    "jamMulai" DATETIME,
+    "jamSelesai" DATETIME,
+    "ruangan" TEXT,
+    "googleCalendarEventId" TEXT,
+    "catatanBeritaAcara" TEXT,
+    "fileUrlBeritaAcara" TEXT,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Ujian_mahasiswaId_fkey" FOREIGN KEY ("mahasiswaId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Ujian_dosenPembimbingId_fkey" FOREIGN KEY ("dosenPembimbingId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -29,18 +43,8 @@ CREATE TABLE "UjianDosenPenguji" (
     "assignedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY ("ujianId", "dosenId"),
-    CONSTRAINT "UjianDosenPenguji_ujianId_fkey" FOREIGN KEY ("ujianId") REFERENCES "Ujian" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "UjianDosenPenguji_ujianId_fkey" FOREIGN KEY ("ujianId") REFERENCES "Ujian" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "UjianDosenPenguji_dosenId_fkey" FOREIGN KEY ("dosenId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "BeritaAcara" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "catatan" TEXT NOT NULL,
-    "fileUrl" TEXT NOT NULL,
-    "ujianId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "BeritaAcara_ujianId_fkey" FOREIGN KEY ("ujianId") REFERENCES "Ujian" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -73,7 +77,7 @@ CREATE TABLE "Session" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BeritaAcara_ujianId_key" ON "BeritaAcara"("ujianId");
+CREATE UNIQUE INDEX "User_nim_key" ON "User"("nim");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");

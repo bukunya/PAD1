@@ -1,12 +1,14 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output = "../ERD.svg"
 }
 
 datasource db {
@@ -14,22 +16,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enum untuk role pengguna
+// --- ENUMS ---
 enum Role {
   MAHASISWA
   DOSEN
   ADMIN
 }
 
-// Enum untuk status pengajuan ujian
 enum StatusUjian {
   MENUNGGU_VERIFIKASI
-  DIJADWALKAN
+  DITERIMA
   DITOLAK
+  DIJADWALKAN
   SELESAI
 }
 
-// Menggunakan format SNAKE_CASE atau PascalCase adalah praktik terbaik.
 enum Prodi {
   TeknologiRekayasaPerangkatLunak
   TeknologiRekayasaElektro
@@ -37,95 +38,71 @@ enum Prodi {
   TeknologiRekayasaInstrumentasiDanKontrol
 }
 
-// Model untuk Pengguna (User)
-// Menyimpan data dasar pengguna yang didapat dari Google OAuth
+
+// --- MODELS ---
+
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime? // ADDED: This field is required by the Auth.js adapter
-  image         String?
-  role          Role      @default(MAHASISWA) // Role default adalah MAHASISWA
-  nim           String?   @unique // REFINED: Sebaiknya unik untuk setiap mahasiswa
-  prodi         Prodi?    // Tipe data menggunakan enum Prodi
-  departemen    String?   @default("Departemen Teknik Elektro dan Informatika")
-  telepon       String?   // REFINED: Menggunakan String lebih aman untuk nomor telepon
-  accounts      Account[]
-  sessions      Session[]
-
-  // Relasi sebagai mahasiswa yang mengajukan ujian
-  ujianMahasiswa Ujian[] @relation("UjianMahasiswa")
-
-  // Relasi sebagai dosen pembimbing
-  ujianDosenPembimbing Ujian[] @relation("UjianDosenPembimbing")
-
-  // Relasi sebagai dosen penguji
-  ujianDosenPenguji UjianDosenPenguji[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String              @id @default(cuid())
+  name                 String?
+  email                String?             @unique
+  emailVerified        DateTime?
+  image                String?
+  role                 Role                @default(MAHASISWA)
+  nim                  String?             @unique
+  prodi                Prodi?
+  departemen           String?             @default("Departemen Teknik Elektro dan Informatika")
+  telepon              String?
+  accounts             Account[]
+  sessions             Session[]
+  ujianMahasiswa       Ujian[]             @relation("UjianMahasiswa")
+  ujianDosenPembimbing Ujian[]             @relation("UjianDosenPembimbing")
+  ujianDosenPenguji    UjianDosenPenguji[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 }
 
-// Model untuk Ujian (Exam)
-// Model sentral yang menampung semua data terkait pengajuan ujian
+// REFINED: Model Ujian is now unified to hold all information
 model Ujian {
-  id        String      @id @default(cuid())
-  judul     String
-  berkasUrl String // URL ke file berkas ujian yang diupload
-  status    StatusUjian @default(MENUNGGU_VERIFIKASI)
-  jadwal    DateTime?   // Jadwal ujian, diisi oleh admin
+  id                String            @id @default(cuid())
 
-  // Relasi ke mahasiswa
-  mahasiswaId String
-  mahasiswa   User   @relation("UjianMahasiswa", fields: [mahasiswaId], references: [id])
-
-  // Relasi ke dosen pembimbing
+  // --- Data Pengajuan (from Mahasiswa) ---
+  judul             String
+  berkasUrl         String
+  createdAt         DateTime          @default(now()) // "Tanggal Diajukan"
+  mahasiswaId       String
+  mahasiswa         User              @relation("UjianMahasiswa", fields: [mahasiswaId], references: [id])
   dosenPembimbingId String
-  dosenPembimbing   User   @relation("UjianDosenPembimbing", fields: [dosenPembimbingId], references: [id])
+  dosenPembimbing   User              @relation("UjianDosenPembimbing", fields: [dosenPembimbingId], references: [id])
+  dosenPenguji      UjianDosenPenguji[]
 
-  // Relasi Many-to-Many dengan Dosen Penguji
-  dosenPenguji UjianDosenPenguji[]
+  // --- Data Penjadwalan (from Admin) ---
+  status            StatusUjian       @default(MENUNGGU_VERIFIKASI)
+  komentarAdmin     String?           // For rejection comments
+  tanggalUjian      DateTime?         // The date of the exam
+  jamMulai          DateTime?         // Start date and time
+  jamSelesai        DateTime?         // End date and time
+  ruangan           String?
+  googleCalendarEventId String?       // To update/delete the GCal event
 
-  // Relasi One-to-One dengan Berita Acara
-  beritaAcara BeritaAcara?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // --- Data Berita Acara (Post-Ujian) ---
+  catatanBeritaAcara String?
+  fileUrlBeritaAcara String?
+  
+  updatedAt         DateTime          @updatedAt
 }
 
-// Model join untuk relasi Many-to-Many antara Ujian dan Dosen Penguji
-// Dibuat agar bisa menambahkan metadata tambahan jika diperlukan di masa depan
+// Model join untuk Dosen Penguji tetap sama
 model UjianDosenPenguji {
   ujianId String
   dosenId String
-
-  ujian Ujian @relation(fields: [ujianId], references: [id])
-  dosen User  @relation(fields: [dosenId], references: [id])
-
+  ujian   Ujian  @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  dosen   User   @relation(fields: [dosenId], references: [id])
   assignedAt DateTime @default(now())
-  // assignedById String // Opsional: Menyimpan ID admin yang menugaskan
-
   @@id([ujianId, dosenId])
 }
 
-// Model untuk Berita Acara
-// Menyimpan hasil dan catatan dari ujian yang telah dilaksanakan
-model BeritaAcara {
-  id      String @id @default(cuid())
-  catatan String
-  fileUrl String // URL ke file berita acara yang sudah ditandatangani
 
-  // Relasi One-to-One dengan Ujian
-  ujianId String @unique
-  ujian   Ujian  @relation(fields: [ujianId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-
-// --- MODEL UNTUK AUTH.JS v5 ---
-// Model-model di bawah ini wajib ada untuk AuthJS v5 (sebelumnya NextAuth)
-
+// --- AUTH.JS MODELS ---
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -139,9 +116,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([provider, providerAccountId])
 }
 
@@ -152,4 +127,3 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-

@@ -243,7 +243,11 @@ export function Profile() {
 
               {/* NIM Field */}
               <div className="space-y-2">
-                <Label htmlFor="nim">NIM / ID Mahasiswa</Label>
+                {userData?.role === "MAHASISWA" ? (
+                  <Label htmlFor="nim">NIM</Label>
+                ) : (
+                  <Label htmlFor="nim">ID Dosen</Label>
+                )}
                 <Input
                   id="nim"
                   name="nim"

@@ -3,14 +3,14 @@
 import * as React from "react";
 import { useSession } from "next-auth/react";
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
+  FileText,
+  LayoutDashboard,
+  FileClock,
+  Calendar,
+  User,
+  Bell,
+  SquareUser,
+  ClipboardList,
   Settings2,
   SquareTerminal,
 } from "lucide-react";
@@ -27,161 +27,139 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// This is sample data for teams and navigation
-const data = {
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
+const dashboard = {
+  name: "Dashboard",
+  url: "/dashboard",
+  icon: LayoutDashboard,
+};
+
+const profile = {
+  name: "Profil",
+  url: "/profil",
+  icon: User,
+};
+
+const dataMhs = {
   projects: [
+    dashboard,
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
+      name: "Form Pengajuan",
+      url: "/form-pengajuan",
+      icon: FileText,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "Riwayat Pengajuan",
+      url: "/riwayat-pengajuan",
+      icon: FileClock,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Detail Jadwal",
+      url: "/detail-jadwal",
+      icon: Calendar,
     },
+    profile,
+  ],
+};
+const dataDosn = {
+  projects: [
+    dashboard,
+    {
+      name: "Detail Jadwal",
+      url: "/detail-jadwal",
+      icon: Calendar,
+    },
+    {
+      name: "Riwayat Pengajuan",
+      url: "/riwayat-pengajuan",
+      icon: FileClock,
+    },
+    {
+      name: "Notifikasi",
+      url: "/notifikasi",
+      icon: Bell,
+    },
+    profile,
+  ],
+};
+const dataAdm = {
+  projects: [
+    dashboard,
+    {
+      name: "Pengajuan",
+      url: "/pengajuan",
+      icon: FileText,
+    },
+    {
+      name: "Formulir Penjadwalan",
+      url: "/formulir-penjadwalan",
+      icon: FileClock,
+    },
+    {
+      name: "Kalender Utama",
+      url: "/kalender-utama",
+      icon: Calendar,
+    },
+    {
+      name: "Data Mahasiswa",
+      url: "/data-mahasiswa",
+      icon: SquareUser,
+    },
+    {
+      name: "Data Dosen",
+      url: "/data-dosen",
+      icon: SquareUser,
+    },
+    {
+      name: "Riwayat dan Laporan",
+      url: "/riwayat-dan-laporan",
+      icon: ClipboardList,
+    },
+    profile,
   ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session, status } = useSession();
 
-  // Don't render sidebar if not authenticated
-  if (status === "loading") {
-    return null;
+  if (status === "loading" || !session) {
+    return (
+      <Sidebar collapsible="icon" {...props}>
+        <SidebarHeader>
+          <TeamSwitcher />
+        </SidebarHeader>
+        <SidebarContent>
+          <div className="p-4 space-y-2">
+            <div className="h-8 bg-muted rounded animate-pulse"></div>
+            <div className="h-8 bg-muted rounded animate-pulse"></div>
+            <div className="h-8 bg-muted rounded animate-pulse"></div>
+          </div>
+        </SidebarContent>
+        <SidebarFooter></SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+    );
   }
 
-  if (!session) {
-    return null;
+  const role = session.user?.role;
+  let dataNav;
+  if (role === "MAHASISWA") {
+    dataNav = dataMhs;
+  } else if (role === "DOSEN") {
+    dataNav = dataDosn;
+  } else if (role === "ADMIN") {
+    dataNav = dataAdm;
+  } else {
+    dataNav = dataMhs; // default to mahasiswa if role is undefined
   }
-
-  const user = {
-    name: session.user?.name || "User",
-    email: session.user?.email || "",
-    avatar: session.user?.image || "",
-  };
-
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavProjects projects={dataNav.projects} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
+      <SidebarFooter></SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

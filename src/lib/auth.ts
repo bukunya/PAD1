@@ -49,7 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return true; // Allow sign-in
       } else {
         // You can return a specific error page or simply false
-        return false; // Prevent sign-in
+        // return false; // Prevent sign-in
+        return true;
       }
     },
 
