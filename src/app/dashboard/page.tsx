@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -13,6 +14,15 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+=======
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import StatusCard from "@/components/contents/dashboard/statusCard";
+import StatusTimeline from "@/components/contents/dashboard/statusTimeline";
+import CalendarWidget from "@/components/contents/dashboard/calendar";
+import JadwalTable from "@/components/contents/dashboard/jadwalTabel";
+>>>>>>> Stashed changes
 
 export default function Page() {
   return (

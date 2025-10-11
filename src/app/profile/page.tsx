@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { AppSidebar } from "@/components/app-sidebar";
 import { Profile } from "@/components/profile";
 import {
@@ -14,6 +15,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+=======
+"use client";
+
+import Sidebar from "@/components/contents/dashboard/sidebar"; // Sidebar manual
+import Navbar from "@/components/contents/dashboard/navbar";  // Navbar manual
+import { Profile } from "@/components/contents/profile/profile"; // Komponen profil
+>>>>>>> Stashed changes
 
 export default function ProfilePage() {
   return (
