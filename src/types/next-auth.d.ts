@@ -1,5 +1,5 @@
 import { Role } from "@prisma/client";
-import NextAuth, { DefaultSession, DefaultUser } from "next-auth";
+import { DefaultSession, DefaultUser } from "next-auth";
 
 // This file extends the default types of Auth.js to include our custom properties.
 

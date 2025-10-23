@@ -14,10 +14,7 @@ export async function statistics() {
   }
 
   try {
-    const userId = session.user.id;
-
     // Fetch data based on user role, if user is admin, fetch all data, if user is mahasiswa and dosen, fetch any data that contains their user id
-    let data;
     // Normalize role to uppercase so it matches the Prisma enum values (MAHASISWA, DOSEN, ADMIN)
     const role = String(session.user.role || "").toUpperCase();
 
@@ -63,7 +60,7 @@ export async function statistics() {
       nim: d.nim,
     }));
 
-    data = {
+    const data = {
       dosen,
       mahasiswa,
     };

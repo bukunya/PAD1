@@ -15,10 +15,43 @@ import { useEffect, useState } from "react";
 import { dashboardDetailJadwal } from "@/lib/actions/dashboardDetailJadwal";
 import Image from "next/image";
 
+interface JadwalItem {
+  idUjian: string;
+  namaMahasiswa: string | null;
+  nim: string | null;
+  foto: string | null;
+  judulTugasAkhir: string | null;
+  tanggal: Date | null;
+  jam: string | null;
+  ruangan: string | null;
+  dosenPenguji1: string | null;
+  dosenPenguji2: string | null;
+  dosenPembimbing: string | null;
+  status: string | null;
+}
+
 export default function Page() {
   const { data: session, status } = useSession();
-  const [dataRole, setDataRole] = useState<any[]>([]);
+  const [dataRole, setDataRole] = useState<JadwalItem[]>([]);
   const [date, setDate] = useState<Date>();
+
+  useEffect(() => {
+    if (session?.user?.role === "DOSEN") {
+      try {
+        dashboardDetailJadwal().then((res) => {
+          if (res.success && res.data) {
+            setDataRole(res.data);
+          } else {
+            setDataRole([]);
+          }
+          setDate(new Date());
+        });
+      } catch (error) {
+        console.error("Error fetching jadwal data:", error);
+        setDataRole([]);
+      }
+    }
+  }, [session]);
 
   if (status === "loading") {
     return (
@@ -43,22 +76,6 @@ export default function Page() {
       </Card>
     );
   }
-
-  useEffect(() => {
-    try {
-      dashboardDetailJadwal().then((res) => {
-        if (res.success && res.data) {
-          setDataRole(res.data);
-        } else {
-          setDataRole([]);
-        }
-        setDate(new Date());
-      });
-    } catch (error) {
-      console.error("Error fetching jadwal data:", error);
-      setDataRole([]);
-    }
-  }, []);
 
   const thDosen = {
     head: ["Nama Mahasiswa", "Judul Tugas Akhir", "Tanggal", "Peran", "Status"],
@@ -85,6 +102,7 @@ export default function Page() {
                   <TableRow key={index}>
                     {dataRole &&
                       item.status === "DIJADWALKAN" &&
+                      item.jam &&
                       (date ? date : new Date()) >
                         new Date(item.jam.split(" - ")[1]) && (
                         <>
@@ -94,7 +112,7 @@ export default function Page() {
                                 {item.foto ? (
                                   <Image
                                     src={item.foto}
-                                    alt={item.namaMahasiswa}
+                                    alt={item.namaMahasiswa || "Mahasiswa"}
                                     width={40}
                                     height={40}
                                     className="w-10 h-10 rounded-full object-cover"
@@ -103,16 +121,18 @@ export default function Page() {
                                   <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                                     <span className="text-gray-600">
                                       {item.namaMahasiswa
-                                        .split(" ")
-                                        .map((n: string) => n[0])
-                                        .join("")
-                                        .toUpperCase()}
+                                        ? item.namaMahasiswa
+                                            .split(" ")
+                                            .map((n: string) => n[0])
+                                            .join("")
+                                            .toUpperCase()
+                                        : "?"}
                                     </span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex flex-col">
-                                <span>{item.namaMahasiswa}</span>
+                                <span>{item.namaMahasiswa || "N/A"}</span>
                                 <span className="text-sm text-muted-foreground">
                                   NIM: {item.nim}
                                 </span>

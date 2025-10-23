@@ -1,6 +1,4 @@
 import { Profile } from "@/components/profile";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function ProfilePage() {
   return (

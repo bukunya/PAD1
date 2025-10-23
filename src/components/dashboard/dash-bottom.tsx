@@ -1,19 +1,32 @@
-import { th } from "date-fns/locale";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import {
   Table,
   TableHeader,
   TableBody,
-  TableFooter,
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
 } from "../ui/table";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { dashboardDetailJadwal } from "@/lib/actions/dashboardDetailJadwal";
+
+interface JadwalItem {
+  idUjian?: string;
+  namaMahasiswa?: string | null;
+  nim?: string | null;
+  foto?: string | null;
+  judulTugasAkhir?: string | null;
+  jenisUjian?: string;
+  tanggal?: Date | null;
+  jam?: string | null;
+  ruangan?: string | null;
+  dosenPembimbing?: string | null;
+  dosenPenguji1?: string | null;
+  dosenPenguji2?: string | null;
+  status?: string;
+}
 
 const thDsn = {
   head: [
@@ -42,36 +55,14 @@ const thAdm = {
   ],
 };
 
-const dataMhs = [
-  {
-    judul: "Analisis Sistem Informasi Akademik",
-    jenis: "Ujian Proposal",
-    tanggal: "2024-06-15",
-    jam: "10:00 - 12:00",
-    id: 1,
-  },
-  {
-    judul: "Pengembangan Aplikasi Mobile untuk E-Learning",
-    jenis: "Ujian Skripsi",
-    tanggal: "2024-06-20",
-    jam: "13:00 - 15:00",
-    id: 2,
-  },
-];
-
 function DashboardBottom() {
   const { data: session, status } = useSession();
-  const [dataRole, setDataRole] = useState<any[]>([]);
+  const [dataRole, setDataRole] = useState<JadwalItem[]>([]);
   const [tableHead, setTableHead] = useState<{ head: string[] }>({ head: [] });
-  if (status === "loading" || !session) {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">Mengambil Data...</p>
-      </Card>
-    );
-  }
-  const role = session.user?.role;
+  const role = session?.user?.role;
+
   useEffect(() => {
+    if (!session || !role) return;
     try {
       dashboardDetailJadwal().then((res) => {
         if (res.success && res.data) {
@@ -93,7 +84,15 @@ function DashboardBottom() {
       console.error("Error fetching jadwal data:", error);
       setDataRole([]);
     }
-  }, []);
+  }, [session, role]);
+
+  if (status === "loading" || !session) {
+    return (
+      <Card className="h-full flex items-center justify-center">
+        <p className="font-medium">Mengambil Data...</p>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
@@ -121,11 +120,10 @@ function DashboardBottom() {
                         ? format(new Date(item.tanggal), "dd/MM/yyyy")
                         : "N/A"}
                     </TableCell>
+                    {/* jam */}
                     <TableCell>
-                      {item.jam
-                        ? format(new Date(item.jam.split(" - ")[0]), "HH:mm") +
-                          " - " +
-                          format(new Date(item.jam.split(" - ")[1]), "HH:mm")
+                      {item.tanggal
+                        ? format(new Date(item.tanggal), "HH:mm:ss")
                         : "N/A"}
                     </TableCell>
                     <TableCell>
@@ -144,11 +142,10 @@ function DashboardBottom() {
                         ? format(new Date(item.tanggal), "dd/MM/yyyy")
                         : "N/A"}
                     </TableCell>
+                    {/* Jam */}
                     <TableCell>
-                      {item.jam
-                        ? format(new Date(item.jam.split(" - ")[0]), "HH:mm") +
-                          " - " +
-                          format(new Date(item.jam.split(" - ")[1]), "HH:mm")
+                      {item.tanggal
+                        ? format(new Date(item.tanggal), "HH:mm:ss")
                         : "N/A"}
                     </TableCell>
                     <TableCell>{item.ruangan}</TableCell>

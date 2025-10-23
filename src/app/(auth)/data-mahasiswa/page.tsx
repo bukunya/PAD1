@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
@@ -12,13 +11,37 @@ import {
 } from "@/components/ui/table";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { dashboardDetailJadwal } from "@/lib/actions/dashboardDetailJadwal";
 import { statistics } from "@/lib/actions/statistics";
 import Image from "next/image";
 
+interface Mahasiswa {
+  id: string;
+  name: string | null;
+  prodi: string | null;
+  image: string | null;
+  nim: string | null;
+}
+
 export default function Page() {
   const { data: session, status } = useSession();
-  const [mhsData, setMhsData] = useState<any[]>([]);
+  const [mhsData, setMhsData] = useState<Mahasiswa[]>([]);
+
+  useEffect(() => {
+    if (session?.user?.role === "ADMIN") {
+      try {
+        statistics().then((res) => {
+          if (res.success && res.data) {
+            setMhsData(res.data.mahasiswa);
+          } else {
+            setMhsData([]);
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching jadwal data:", error);
+        setMhsData([]);
+      }
+    }
+  }, [session]);
 
   if (status === "loading") {
     return (
@@ -43,21 +66,6 @@ export default function Page() {
       </Card>
     );
   }
-
-  useEffect(() => {
-    try {
-      statistics().then((res) => {
-        if (res.success && res.data) {
-          setMhsData(res.data.mahasiswa);
-        } else {
-          setMhsData([]);
-        }
-      });
-    } catch (error) {
-      console.error("Error fetching jadwal data:", error);
-      setMhsData([]);
-    }
-  }, []);
 
   const thMhs = {
     head: ["Nama Mahasiswa", "Angkatan", "Program Studi", "Status", "Aksi"],
@@ -90,7 +98,7 @@ export default function Page() {
                               {item.image ? (
                                 <Image
                                   src={item.image}
-                                  alt={item.name}
+                                  alt={item.name || "Mahasiswa"}
                                   width={40}
                                   height={40}
                                   className="w-10 h-10 rounded-full object-cover"
@@ -99,16 +107,18 @@ export default function Page() {
                                 <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                                   <span className="text-gray-600">
                                     {item.name
-                                      .split(" ")
-                                      .map((n: string) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
+                                      ? item.name
+                                          .split(" ")
+                                          .map((n: string) => n[0])
+                                          .join("")
+                                          .toUpperCase()
+                                      : "?"}
                                   </span>
                                 </div>
                               )}
                             </div>
                             <div className="flex flex-col">
-                              <span>{item.name}</span>
+                              <span>{item.name || "N/A"}</span>
                               <span className="text-sm text-muted-foreground">
                                 NIM: {item.nim}
                               </span>
