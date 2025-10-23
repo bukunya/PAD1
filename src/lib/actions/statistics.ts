@@ -18,12 +18,12 @@ export async function statistics() {
     // Normalize role to uppercase so it matches the Prisma enum values (MAHASISWA, DOSEN, ADMIN)
     const role = String(session.user.role || "").toUpperCase();
 
-    if (role === "MAHASISWA") {
-      return {
-        success: false,
-        error: "Akses ditolak untuk role MAHASISWA",
-      };
-    }
+    // if (role === "MAHASISWA") {
+    //   return {
+    //     success: false,
+    //     error: "Akses ditolak untuk role MAHASISWA",
+    //   };
+    // }
 
     // fetch all dosen and mahasiswa data, only their id and name, with format like {"dosen": [{id: string, name: string}, ...], "mahasiswa": [{id: string, name: string}, ...]}
 

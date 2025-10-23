@@ -24,6 +24,7 @@ import { Camera, Save, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { updateProfile, getUserProfile } from "@/lib/actions/profile";
 import { Prodi } from "@/generated/prisma";
+import { statistics } from "@/lib/actions/statistics";
 
 /**
  * Profile component for managing user profile information
@@ -45,6 +46,7 @@ export function Profile() {
     nim: "",
     prodi: "" as Prodi | "",
     telepon: "",
+    dosenPembimbing: "",
   });
 
   // User data from database
@@ -60,6 +62,10 @@ export function Profile() {
     telepon: string | null;
   } | null>(null);
 
+  const [dosenList, setDosenList] = useState<
+    Array<{ id: string; name: string | null }>
+  >([]);
+
   // Load user profile data on component mount
   useEffect(() => {
     async function loadProfile() {
@@ -72,6 +78,7 @@ export function Profile() {
 
       try {
         const profile = await getUserProfile();
+        const dosens = await statistics();
         if (profile) {
           setUserData(profile);
           setFormData({
@@ -79,7 +86,14 @@ export function Profile() {
             nim: profile.nim || "",
             prodi: profile.prodi || "",
             telepon: profile.telepon || "",
+            dosenPembimbing: profile.dosenPembimbingId || "",
           });
+        }
+        if (dosens.success && dosens.data) {
+          setDosenList(
+            dosens.data.dosen.map((d) => ({ id: d.id, name: d.name || "" })) ||
+              []
+          );
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -105,6 +119,8 @@ export function Profile() {
       if (formData.nim) formDataToSend.append("nim", formData.nim);
       if (formData.prodi) formDataToSend.append("prodi", formData.prodi);
       if (formData.telepon) formDataToSend.append("telepon", formData.telepon);
+      if (formData.dosenPembimbing)
+        formDataToSend.append("dosenPembimbingId", formData.dosenPembimbing);
 
       const result = await updateProfile(formDataToSend);
 
@@ -288,6 +304,35 @@ export function Profile() {
                   </p>
                 )}
               </div>
+
+              {userData?.role === "MAHASISWA" && (
+                <div className="space-y-2">
+                  <Label htmlFor="dosenPembimbing">Dosen Pembimbing</Label>
+                  <Select
+                    value={formData.dosenPembimbing}
+                    onValueChange={(value) =>
+                      handleInputChange("dosenPembimbing", value)
+                    }
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger id="dosenPembimbing">
+                      <SelectValue placeholder="Pilih Dosen Pembimbing" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dosenList.map((dosen) => (
+                        <SelectItem key={dosen.id} value={dosen.id}>
+                          {dosen.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.dosenPembimbing && (
+                    <p className="text-sm text-destructive">
+                      {fieldErrors.dosenPembimbing[0]}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Department Field (Read-only) */}
               <div className="space-y-2">

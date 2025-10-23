@@ -25,6 +25,7 @@ const updateProfileSchema = z.object({
     .regex(/^(\+62|62|0)[8-9][0-9]{7,11}$/, "Format nomor telepon tidak valid")
     .optional()
     .or(z.literal("")),
+  dosenPembimbingId: z.string().optional(),
 });
 
 /**
@@ -49,6 +50,7 @@ export async function updateProfile(formData: FormData) {
       nim: formData.get("nim") as string,
       prodi: formData.get("prodi") as string,
       telepon: formData.get("telepon") as string,
+      dosenPembimbingId: formData.get("dosenPembimbingId") as string,
     };
 
     // Validate the input data
@@ -87,6 +89,7 @@ export async function updateProfile(formData: FormData) {
         prodi: data.prodi || null,
         telepon: data.telepon || null,
         updatedAt: new Date(),
+        dosenPembimbingId: data.dosenPembimbingId || null,
       },
     });
 
@@ -132,6 +135,7 @@ export async function getUserProfile() {
         telepon: true,
         createdAt: true,
         updatedAt: true,
+        dosenPembimbingId: true,
       },
     });
 
