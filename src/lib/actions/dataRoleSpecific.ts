@@ -24,7 +24,7 @@ export async function dataRoleSpecific() {
 
     if (role === "ADMIN") {
       // Admin: Fetch all Ujian data including Dosen Pembimbing and 2 Dosen Penguji
-      data = await prisma.ujian.findFirst({
+      data = await prisma.ujian.findMany({
         include: {
           mahasiswa: true, // Include mahasiswa details
           dosenPembimbing: true, // Include dosen pembimbing

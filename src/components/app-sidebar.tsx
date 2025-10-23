@@ -69,8 +69,8 @@ const dataDosn = {
       icon: Calendar,
     },
     {
-      name: "Riwayat Pengajuan",
-      url: "/riwayat-pengajuan",
+      name: "Riwayat Ujian",
+      url: "/riwayat-ujian",
       icon: FileClock,
     },
     {
@@ -124,9 +124,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   if (status === "loading" || !session) {
     return (
       <Sidebar collapsible="icon" {...props}>
-        <SidebarHeader>
-          <TeamSwitcher />
-        </SidebarHeader>
+        <div className="p-8" />
         <SidebarContent>
           <div className="p-4 space-y-2">
             <div className="h-8 bg-muted rounded animate-pulse"></div>
@@ -153,9 +151,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher />
-      </SidebarHeader>
+      <div className="p-8" />
+
       <SidebarContent>
         <NavProjects projects={dataNav.projects} />
       </SidebarContent>

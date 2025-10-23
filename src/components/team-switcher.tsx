@@ -30,7 +30,7 @@ export function TeamSwitcher() {
             <h1 className="text-xl font-bold">M</h1>
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">Markipong</span>
+            <span className="truncate font-medium">h</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

@@ -35,6 +35,7 @@ export async function dashboardDetailJadwal() {
       idUjian: item.id,
       namaMahasiswa: item.mahasiswa?.name || null,
       nim: item.mahasiswa?.nim || null,
+      foto: item.mahasiswa?.image || null,
       judulTugasAkhir: item.judul || null,
       tanggal: item.tanggalUjian,
       jam: `${item.jamMulai} - ${item.jamSelesai}`,

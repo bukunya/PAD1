@@ -1,4 +1,5 @@
 import { th } from "date-fns/locale";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import {
   Table,
@@ -11,6 +12,8 @@ import {
   TableCaption,
 } from "../ui/table";
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { dashboardDetailJadwal } from "@/lib/actions/dashboardDetailJadwal";
 
 const thDsn = {
   head: [
@@ -33,9 +36,9 @@ const thAdm = {
     "Nama Mahasiswa",
     "Tanggal Ujian",
     "Ruang Ujian",
-    "Pembimbing 1",
-    "Pembimbing 2",
-    "Penguji",
+    "Penguji 1",
+    "Penguji 2",
+    "Pembimbing",
   ],
 };
 
@@ -56,51 +59,10 @@ const dataMhs = [
   },
 ];
 
-const dataDsn = [
-  {
-    nama: "Budi Santoso",
-    judul: "Analisis Sistem Informasi Akademik",
-    tanggal: "2024-06-15",
-    jam: "10:00 - 12:00",
-    ruangan: "Ruang 101",
-    peran: "Pembimbing 1",
-    id: 3,
-  },
-  {
-    nama: "Siti Aminah",
-    judul: "Pengembangan Aplikasi Mobile untuk E-Learning",
-    tanggal: "2024-06-20",
-    jam: "13:00 - 15:00",
-    ruangan: "Ruang 102",
-    peran: "Pembimbing 2",
-    id: 4,
-  },
-];
-
-const dataAdm = [
-  {
-    nama: "Budi Santoso",
-    tanggal: "2024-06-15",
-    ruangan: "Ruang 101",
-    pembimbing1: "Dr. Andi Wijaya",
-    pembimbing2: "Dr. Siti Rahma",
-    penguji: "Dr. Rina Lestari",
-    id: 5,
-  },
-  {
-    nama: "Siti Aminah",
-    tanggal: "2024-06-20",
-    ruangan: "Ruang 102",
-    pembimbing1: "Dr. Andi Wijaya",
-    pembimbing2: "Dr. Siti Rahma",
-    penguji: "Dr. Rina Lestari",
-    id: 6,
-  },
-];
-
 function DashboardBottom() {
   const { data: session, status } = useSession();
-  //   const status = "loading";
+  const [dataRole, setDataRole] = useState<any[]>([]);
+  const [tableHead, setTableHead] = useState<{ head: string[] }>({ head: [] });
   if (status === "loading" || !session) {
     return (
       <Card className="h-full flex items-center justify-center">
@@ -109,21 +71,30 @@ function DashboardBottom() {
     );
   }
   const role = session.user?.role;
-  let tableHead;
-  let data;
-  if (role === "MAHASISWA") {
-    tableHead = thMhs;
-    data = dataMhs;
-  } else if (role === "DOSEN") {
-    tableHead = thDsn;
-    data = dataDsn;
-  } else if (role === "ADMIN") {
-    tableHead = thAdm;
-    data = dataAdm;
-  } else {
-    tableHead = thMhs;
-    data = dataMhs;
-  }
+  useEffect(() => {
+    try {
+      dashboardDetailJadwal().then((res) => {
+        if (res.success && res.data) {
+          setDataRole(res.data);
+        } else {
+          setDataRole([]);
+        }
+        if (role === "MAHASISWA") {
+          setTableHead(thMhs);
+        } else if (role === "DOSEN") {
+          setTableHead(thDsn);
+        } else if (role === "ADMIN") {
+          setTableHead(thAdm);
+        } else {
+          setTableHead({ head: [] });
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching jadwal data:", error);
+      setDataRole([]);
+    }
+  }, []);
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -139,11 +110,76 @@ function DashboardBottom() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((item, index) => (
+            {dataRole.map((item, index) => (
               <TableRow key={index}>
-                {Object.values(item).map((value, i) => (
-                  <TableCell key={i}>{value}</TableCell>
-                ))}
+                {role === "MAHASISWA" && (
+                  <>
+                    <TableCell>{item.judulTugasAkhir}</TableCell>
+                    <TableCell>{item.jenisUjian || "N/A"}</TableCell>
+                    <TableCell>
+                      {item.tanggal
+                        ? format(new Date(item.tanggal), "dd/MM/yyyy")
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {item.jam
+                        ? format(new Date(item.jam.split(" - ")[0]), "HH:mm") +
+                          " - " +
+                          format(new Date(item.jam.split(" - ")[1]), "HH:mm")
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      <button className="text-blue-600 hover:underline">
+                        Lihat Detail
+                      </button>
+                    </TableCell>
+                  </>
+                )}
+                {role === "DOSEN" && item.status === "DIJADWALKAN" && (
+                  <>
+                    <TableCell>{item.namaMahasiswa}</TableCell>
+                    <TableCell>{item.judulTugasAkhir}</TableCell>
+                    <TableCell>
+                      {item.tanggal
+                        ? format(new Date(item.tanggal), "dd/MM/yyyy")
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {item.jam
+                        ? format(new Date(item.jam.split(" - ")[0]), "HH:mm") +
+                          " - " +
+                          format(new Date(item.jam.split(" - ")[1]), "HH:mm")
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>{item.ruangan}</TableCell>
+                    <TableCell>
+                      {item.dosenPembimbing === session.user?.name
+                        ? "Pembimbing"
+                        : "Penguji"}
+                    </TableCell>
+                    <TableCell>
+                      <button className="text-blue-600 hover:underline">
+                        Lihat Detail
+                      </button>
+                    </TableCell>
+                  </>
+                )}
+                {role === "ADMIN" && (
+                  <>
+                    <TableCell>{item.namaMahasiswa}</TableCell>
+                    <TableCell>
+                      {item.tanggal
+                        ? format(new Date(item.tanggal), "dd/MM/yyyy")
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>{item.ruangan}</TableCell>
+                    <TableCell>{item.dosenPenguji1 || "N/A"}</TableCell>
+                    <TableCell>{item.dosenPenguji2 || "N/A"}</TableCell>
+                    <TableCell className="border">
+                      {item.dosenPembimbing || "N/A"}
+                    </TableCell>
+                  </>
+                )}
               </TableRow>
             ))}
           </TableBody>

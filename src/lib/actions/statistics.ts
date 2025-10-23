@@ -37,6 +37,8 @@ export async function statistics() {
         select: {
           id: true,
           name: true,
+          image: true,
+          nim: true,
           _count: {
             select: {
               ujianDosenPembimbing: true, // Count as pembimbing
@@ -47,7 +49,7 @@ export async function statistics() {
       }),
       prisma.user.findMany({
         where: { role: "MAHASISWA" },
-        select: { id: true, name: true, prodi: true },
+        select: { id: true, name: true, prodi: true, image: true, nim: true },
       }),
     ]);
 
@@ -57,6 +59,8 @@ export async function statistics() {
       name: d.name,
       pembimbingCount: d._count.ujianDosenPembimbing,
       pengujiCount: d._count.ujianDosenPenguji,
+      image: d.image,
+      nim: d.nim,
     }));
 
     data = {
