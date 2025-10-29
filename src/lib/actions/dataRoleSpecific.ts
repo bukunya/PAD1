@@ -40,7 +40,11 @@ export async function dataRoleSpecific() {
       // Non-admin: Fetch only Ujian data related to the user
       data = await prisma.ujian.findMany({
         where: {
-          OR: [{ mahasiswaId: userId }, { dosenPembimbingId: userId }],
+          OR: [
+            { mahasiswaId: userId },
+            { dosenPembimbingId: userId },
+            { dosenPenguji: { some: { dosenId: userId } } },
+          ],
         },
         include: {
           mahasiswa: true,
