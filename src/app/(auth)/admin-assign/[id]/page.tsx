@@ -52,6 +52,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
+    calendarLink?: string;
   } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [ujianData, setUjianData] = useState<UjianData | null>(null);
@@ -193,6 +194,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         setMessage({
           type: "success",
           text: result.message || "Ujian berhasil dijadwalkan",
+          calendarLink: result.calendarEventLink || undefined,
         });
         // Reload data after successful assignment
         const ujianResult = await getUjianDetails(resolvedParams.id);
@@ -275,7 +277,21 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               ) : (
                 <AlertCircle className="h-4 w-4" />
               )}
-              <AlertDescription>{message.text}</AlertDescription>
+              <AlertDescription>
+                {message.text}
+                {message.calendarLink && (
+                  <div className="mt-2">
+                    <a
+                      href={message.calendarLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Lihat Event di Google Calendar →
+                    </a>
+                  </div>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 

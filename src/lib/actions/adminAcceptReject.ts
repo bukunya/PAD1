@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { createMultipleNotifications } from "./notifications";
 
 /**
  * Server action to get ujian details for admin review
@@ -94,6 +95,13 @@ export async function acceptUjian(ujianId: string) {
     // Check if ujian exists
     const ujian = await prisma.ujian.findUnique({
       where: { id: ujianId },
+      include: {
+        mahasiswa: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
     if (!ujian) {
@@ -111,6 +119,22 @@ export async function acceptUjian(ujianId: string) {
         updatedAt: new Date(),
       },
     });
+
+    // Create notifications for mahasiswa and dosen pembimbing
+    const notifications = [
+      {
+        userId: ujian.mahasiswaId,
+        ujianId: ujianId,
+        message: "Pengajuan telah disetujui admin",
+      },
+      {
+        userId: ujian.dosenPembimbingId,
+        ujianId: ujianId,
+        message: `Pengajuan oleh ${ujian.mahasiswa.name || "mahasiswa"} telah disetujui prodi`,
+      },
+    ];
+
+    await createMultipleNotifications(notifications);
 
     // Revalidate relevant pages
     revalidatePath("/detail-jadwal");
@@ -173,6 +197,19 @@ export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
         updatedAt: new Date(),
       },
     });
+
+    // Create notification for mahasiswa
+    const message = komentarAdmin
+      ? `Pengajuan ditolak admin, catatan: ${komentarAdmin}`
+      : "Pengajuan ditolak admin";
+
+    await createMultipleNotifications([
+      {
+        userId: ujian.mahasiswaId,
+        ujianId: ujianId,
+        message: message,
+      },
+    ]);
 
     // Revalidate relevant pages
     revalidatePath("/detail-jadwal");

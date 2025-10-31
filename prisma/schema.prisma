@@ -66,6 +66,7 @@ model User {
   ujianMahasiswa       Ujian[]             @relation("UjianMahasiswa")
   ujianDosenPembimbing Ujian[]             @relation("UjianDosenPembimbing")
   ujianDosenPenguji    UjianDosenPenguji[]
+  notifications        Notification[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 }
@@ -97,6 +98,9 @@ model Ujian {
   catatanBeritaAcara String?
   fileUrlBeritaAcara String?
   
+  // --- Relations ---
+  notifications     Notification[]
+  
   updatedAt         DateTime          @updatedAt
 }
 
@@ -108,6 +112,20 @@ model UjianDosenPenguji {
   dosen   User   @relation(fields: [dosenId], references: [id])
   assignedAt DateTime @default(now())
   @@id([ujianId, dosenId])
+}
+
+// Model untuk Notification
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   // Who receives this notification
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ujianId   String   // Related exam
+  ujian     Ujian    @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  message   String   // Notification message
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([ujianId])
 }
 
 

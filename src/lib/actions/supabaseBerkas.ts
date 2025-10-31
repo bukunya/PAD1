@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { supabaseAdmin } from "@/lib/supabase";
 import { auth } from "@/lib/auth"; // Impor Auth.js Anda
 import { revalidatePath } from "next/cache";
+import { createNotification } from "./notifications";
 
 // Definisikan state untuk formulir
 export type FormState = {
@@ -68,7 +69,7 @@ export async function submitBerkas(
     const publicUrl = urlData.publicUrl;
 
     // 7. Simpan informasi ke database Prisma Anda
-    await prisma.ujian.create({
+    const newUjian = await prisma.ujian.create({
       data: {
         judul: judul,
         berkasUrl: publicUrl,
@@ -78,7 +79,14 @@ export async function submitBerkas(
       },
     });
 
-    // 8. Berhasil!
+    // 8. Create notification for mahasiswa
+    await createNotification(
+      session.user.id,
+      newUjian.id,
+      "Pengajuan telah dibuat dan dikirim ke sistem"
+    );
+
+    // 9. Berhasil!
     revalidatePath("/dashboard"); // Perbarui halaman dashboard
     return { success: true, message: "Pengajuan ujian berhasil dikirim." };
   } catch (e: unknown) {
