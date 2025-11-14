@@ -1,7 +1,10 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { submitBerkas, type FormState } from "@/lib/actions/supabaseBerkas";
+import {
+  submitBerkas,
+  type FormState,
+} from "@/lib/actions/formPengajuan/uploadBerkasSupabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

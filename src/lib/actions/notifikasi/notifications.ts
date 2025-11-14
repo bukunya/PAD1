@@ -3,9 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-/**
- * Create a notification for a user
- */
 export async function createNotification(
   userId: string,
   ujianId: string,
@@ -19,14 +16,13 @@ export async function createNotification(
         message,
       },
     });
+    return { success: true, message: "Notification created" };
   } catch (error) {
     console.error("Error creating notification:", error);
+    return { success: false, error: "Failed to create notification" };
   }
 }
 
-/**
- * Create multiple notifications at once
- */
 export async function createMultipleNotifications(
   notifications: Array<{ userId: string; ujianId: string; message: string }>
 ) {
@@ -34,15 +30,14 @@ export async function createMultipleNotifications(
     await prisma.notification.createMany({
       data: notifications,
     });
+    return { success: true, message: "Notifications created" };
   } catch (error) {
     console.error("Error creating notifications:", error);
+    return { success: false, error: "Failed to create notifications" };
   }
 }
 
-/**
- * Get notifications for the current user
- */
-export async function getNotifications() {
+export async function getNotifications(page = 1, limit = 10) {
   try {
     const session = await auth();
 
@@ -52,6 +47,15 @@ export async function getNotifications() {
         error: "Anda harus login untuk melihat notifikasi",
       };
     }
+
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const totalCount = await prisma.notification.count({
+      where: {
+        userId: session.user.id,
+      },
+    });
 
     const notifications = await prisma.notification.findMany({
       where: {
@@ -74,11 +78,20 @@ export async function getNotifications() {
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take: limit,
     });
 
     return {
       success: true,
       data: notifications,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: skip + notifications.length < totalCount,
+      },
     };
   } catch (error) {
     console.error("Error fetching notifications:", error);

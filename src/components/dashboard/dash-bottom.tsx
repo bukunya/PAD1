@@ -10,7 +10,7 @@ import {
 } from "../ui/table";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { dashBottom } from "@/lib/actions/dashboard/dashBottom";
+import { dashBottom } from "@/lib/actions/dashboard/dashboardTop";
 
 interface JadwalItem {
   id: string;

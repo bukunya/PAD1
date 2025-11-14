@@ -3,11 +3,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { createMultipleNotifications } from "./notifications";
+import { createMultipleNotifications } from "../notifikasi/notifications";
 
-/**
- * Server action to get ujian details for admin review
- */
 export async function getUjianForReview(ujianId: string) {
   try {
     const session = await auth();
@@ -71,9 +68,6 @@ export async function getUjianForReview(ujianId: string) {
   }
 }
 
-/**
- * Server action to accept ujian and redirect to assign page
- */
 export async function acceptUjian(ujianId: string) {
   try {
     const session = await auth();
@@ -92,7 +86,6 @@ export async function acceptUjian(ujianId: string) {
       };
     }
 
-    // Check if ujian exists
     const ujian = await prisma.ujian.findUnique({
       where: { id: ujianId },
       include: {
@@ -111,7 +104,6 @@ export async function acceptUjian(ujianId: string) {
       };
     }
 
-    // Update status to DITERIMA
     await prisma.ujian.update({
       where: { id: ujianId },
       data: {
@@ -120,7 +112,6 @@ export async function acceptUjian(ujianId: string) {
       },
     });
 
-    // Create notifications for mahasiswa and dosen pembimbing
     const notifications = [
       {
         userId: ujian.mahasiswaId,
@@ -130,13 +121,14 @@ export async function acceptUjian(ujianId: string) {
       {
         userId: ujian.dosenPembimbingId,
         ujianId: ujianId,
-        message: `Pengajuan oleh ${ujian.mahasiswa.name || "mahasiswa"} telah disetujui prodi`,
+        message: `Pengajuan oleh ${
+          ujian.mahasiswa.name || "mahasiswa"
+        } telah disetujui prodi`,
       },
     ];
 
     await createMultipleNotifications(notifications);
 
-    // Revalidate relevant pages
     revalidatePath("/detail-jadwal");
     revalidatePath(`/admin-accept-reject/${ujianId}`);
 
@@ -155,9 +147,6 @@ export async function acceptUjian(ujianId: string) {
   }
 }
 
-/**
- * Server action to reject ujian with optional comment
- */
 export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
   try {
     const session = await auth();
@@ -176,7 +165,6 @@ export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
       };
     }
 
-    // Check if ujian exists
     const ujian = await prisma.ujian.findUnique({
       where: { id: ujianId },
     });
@@ -188,7 +176,6 @@ export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
       };
     }
 
-    // Update status to DITOLAK
     await prisma.ujian.update({
       where: { id: ujianId },
       data: {
@@ -198,7 +185,6 @@ export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
       },
     });
 
-    // Create notification for mahasiswa
     const message = komentarAdmin
       ? `Pengajuan ditolak admin, catatan: ${komentarAdmin}`
       : "Pengajuan ditolak admin";
@@ -211,7 +197,6 @@ export async function rejectUjian(ujianId: string, komentarAdmin?: string) {
       },
     ]);
 
-    // Revalidate relevant pages
     revalidatePath("/detail-jadwal");
     revalidatePath(`/admin-accept-reject/${ujianId}`);
 

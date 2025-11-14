@@ -4,7 +4,19 @@ import { google } from "googleapis";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Initialize OAuth2 client
+function convertToJakartaTime(utcDateString: string): string {
+  const date = new Date(utcDateString);
+
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+}
+
 function getOAuth2Client() {
   return new google.auth.OAuth2(
     process.env.AUTH_GOOGLE_ID,
@@ -13,7 +25,6 @@ function getOAuth2Client() {
   );
 }
 
-// Get user's access token from the database
 async function getUserAccessToken(userId: string) {
   const account = await prisma.account.findFirst({
     where: {
@@ -41,7 +52,6 @@ async function getUserAccessToken(userId: string) {
   };
 }
 
-// Refresh access token if expired
 async function refreshAccessToken(userId: string, refreshToken: string) {
   const oauth2Client = getOAuth2Client();
   oauth2Client.setCredentials({
@@ -55,7 +65,6 @@ async function refreshAccessToken(userId: string, refreshToken: string) {
       throw new Error("Failed to obtain new access token");
     }
 
-    // Update the token in the database
     await prisma.account.updateMany({
       where: {
         userId: userId,
@@ -74,7 +83,6 @@ async function refreshAccessToken(userId: string, refreshToken: string) {
   } catch (error) {
     console.error("Error refreshing access token:", error);
 
-    // If refresh token is invalid, throw a specific error
     if (
       error instanceof Error &&
       (error.message.includes("invalid_grant") ||
@@ -91,30 +99,33 @@ async function refreshAccessToken(userId: string, refreshToken: string) {
   }
 }
 
-// Get valid access token (refresh if needed)
 async function getValidAccessToken(userId: string) {
   try {
     const tokenData = await getUserAccessToken(userId);
 
-    // Check if we have a refresh token
     if (!tokenData.refresh_token) {
       throw new Error(
         "REAUTH_REQUIRED: Your Google Calendar connection is missing required permissions. Please sign out and sign in again to reconnect."
       );
     }
 
-    // Check if token is expired (with 5 minute buffer)
     const now = Math.floor(Date.now() / 1000);
     const isExpired = tokenData.expires_at && tokenData.expires_at < now + 300;
 
     if (isExpired) {
       console.log("Access token expired for user:", userId, "- refreshing...");
-      return await refreshAccessToken(userId, tokenData.refresh_token);
+      try {
+        return await refreshAccessToken(userId, tokenData.refresh_token);
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        throw new Error(
+          "REAUTH_REQUIRED: Failed to refresh access token. Please sign out and sign in again."
+        );
+      }
     }
 
     return tokenData.access_token;
   } catch (error) {
-    // Re-throw with context
     if (error instanceof Error && error.message.includes("REAUTH_REQUIRED")) {
       throw error;
     }
@@ -124,14 +135,13 @@ async function getValidAccessToken(userId: string) {
   }
 }
 
-// Create a calendar event
 export async function createCalendarEvent(eventData: {
   summary: string;
   description?: string;
   location?: string;
-  startDateTime: string; // ISO string
-  endDateTime: string; // ISO string
-  attendees?: string[]; // Array of email addresses
+  startDateTime: string;
+  endDateTime: string;
+  attendees?: string[];
 }) {
   try {
     const session = await auth();
@@ -157,19 +167,19 @@ export async function createCalendarEvent(eventData: {
       description: eventData.description,
       location: eventData.location,
       start: {
-        dateTime: eventData.startDateTime,
+        dateTime: convertToJakartaTime(eventData.startDateTime),
         timeZone: "Asia/Jakarta",
       },
       end: {
-        dateTime: eventData.endDateTime,
+        dateTime: convertToJakartaTime(eventData.endDateTime),
         timeZone: "Asia/Jakarta",
       },
       attendees: eventData.attendees?.map((email) => ({ email })),
       reminders: {
         useDefault: false,
         overrides: [
-          { method: "email", minutes: 24 * 60 }, // 1 day before
-          { method: "popup", minutes: 30 }, // 30 minutes before
+          { method: "email", minutes: 24 * 60 },
+          { method: "popup", minutes: 30 },
         ],
       },
     };
@@ -177,7 +187,7 @@ export async function createCalendarEvent(eventData: {
     const response = await calendar.events.insert({
       calendarId: "primary",
       requestBody: event,
-      sendUpdates: "all", // Send email invitations to attendees
+      sendUpdates: "all",
     });
 
     return {
@@ -189,9 +199,7 @@ export async function createCalendarEvent(eventData: {
   } catch (error: unknown) {
     console.error("Error creating calendar event:", error);
 
-    // Handle specific error types
     if (error instanceof Error) {
-      // Check if it's a re-authentication required error
       if (error.message.includes("REAUTH_REQUIRED")) {
         return {
           success: false,
@@ -200,7 +208,6 @@ export async function createCalendarEvent(eventData: {
         };
       }
 
-      // Check if it's an API error (401, 403, etc.)
       if (
         error.message.includes("invalid authentication credentials") ||
         error.message.includes("Invalid Credentials") ||
@@ -227,7 +234,6 @@ export async function createCalendarEvent(eventData: {
   }
 }
 
-// Update a calendar event
 export async function updateCalendarEvent(
   eventId: string,
   eventData: {
@@ -272,13 +278,13 @@ export async function updateCalendarEvent(
     if (eventData.location) event.location = eventData.location;
     if (eventData.startDateTime) {
       event.start = {
-        dateTime: eventData.startDateTime,
+        dateTime: convertToJakartaTime(eventData.startDateTime),
         timeZone: "Asia/Jakarta",
       };
     }
     if (eventData.endDateTime) {
       event.end = {
-        dateTime: eventData.endDateTime,
+        dateTime: convertToJakartaTime(eventData.endDateTime),
         timeZone: "Asia/Jakarta",
       };
     }
@@ -303,7 +309,6 @@ export async function updateCalendarEvent(
     console.error("Error updating calendar event:", error);
 
     if (error instanceof Error) {
-      // Check if it's a re-authentication required error
       if (error.message.includes("REAUTH_REQUIRED")) {
         return {
           success: false,
@@ -312,7 +317,6 @@ export async function updateCalendarEvent(
         };
       }
 
-      // Check if it's an API error
       if (
         error.message.includes("invalid authentication credentials") ||
         error.message.includes("Invalid Credentials") ||
@@ -339,7 +343,6 @@ export async function updateCalendarEvent(
   }
 }
 
-// Delete a calendar event
 export async function deleteCalendarEvent(eventId: string) {
   try {
     const session = await auth();
@@ -374,7 +377,6 @@ export async function deleteCalendarEvent(eventId: string) {
     console.error("Error deleting calendar event:", error);
 
     if (error instanceof Error) {
-      // Check if it's a re-authentication required error
       if (error.message.includes("REAUTH_REQUIRED")) {
         return {
           success: false,
@@ -383,7 +385,6 @@ export async function deleteCalendarEvent(eventId: string) {
         };
       }
 
-      // Check if it's an API error
       if (
         error.message.includes("invalid authentication credentials") ||
         error.message.includes("Invalid Credentials") ||
@@ -410,7 +411,6 @@ export async function deleteCalendarEvent(eventId: string) {
   }
 }
 
-// Check if user has valid Google Calendar access
 export async function checkCalendarAccess() {
   try {
     const session = await auth();
@@ -423,7 +423,6 @@ export async function checkCalendarAccess() {
 
     const userId = session.user.id;
 
-    // Try to get and validate the token
     await getValidAccessToken(userId);
 
     return {

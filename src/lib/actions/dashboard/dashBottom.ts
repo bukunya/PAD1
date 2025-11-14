@@ -3,22 +3,23 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function dashBottom() {
-  interface data {
-    id: string;
-    namaMahasiswa?: string | null;
-    nim?: string | null;
-    foto?: string | null;
-    judulTugasAkhir?: string | null;
-    tanggal?: Date | null;
-    jam?: string | null;
-    ruangan?: string | null;
-    dosenPenguji1?: string | null;
-    dosenPenguji2?: string | null;
-    dosenPembimbing?: string | null;
-    status?: string | null;
-  }
+interface data {
+  id: string;
+  namaMahasiswa?: string | null;
+  nim?: string | null;
+  foto?: string | null;
+  judulTugasAkhir?: string | null;
+  tanggal?: Date | null;
+  jam?: string | null;
+  ruangan?: string | null;
+  dosenPenguji1?: string | null;
+  dosenPenguji2?: string | null;
+  dosenPembimbing?: string | null;
+  status?: string | null;
+  isDosenPembimbing?: boolean | null;
+}
 
+export async function dashBottom() {
   const session = await auth();
   if (!session?.user?.id) {
     return {
@@ -41,6 +42,10 @@ export async function dashBottom() {
               judul: true,
               tanggalUjian: true,
             },
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 5,
           });
           data = ujianData.map((item) => ({
             id: item.id,
@@ -78,6 +83,10 @@ export async function dashBottom() {
                 },
               },
             },
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 5,
           });
           data = ujianData.map((item) => ({
             id: item.id,
@@ -113,12 +122,12 @@ export async function dashBottom() {
               judul: true,
               tanggalUjian: true,
               ruangan: true,
-              dosenPembimbing: {
-                select: {
-                  name: true,
-                },
-              },
+              dosenPembimbingId: true,
             },
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 5,
           });
           data = ujianData.map((item) => ({
             id: item.id,
@@ -128,7 +137,7 @@ export async function dashBottom() {
             judulTugasAkhir: item.judul || null,
             tanggal: item.tanggalUjian,
             ruangan: item.ruangan || null,
-            dosenPembimbing: item.dosenPembimbing?.name || null,
+            isDosenPembimbing: item.dosenPembimbingId === userId,
           }));
         }
         break;

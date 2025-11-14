@@ -5,13 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-// Define the schema for profile updates
-const updateProfileSchema = z.object({
+const updateMahasiswaProfileSchema = z.object({
   name: z
     .string()
     .min(1, "Nama tidak boleh kosong")
     .max(100, "Nama terlalu panjang"),
-  nim: z.string().optional(),
+  nim: z.string().min(1, "NIM tidak boleh kosong").optional(),
   prodi: z
     .enum([
       "TeknologiRekayasaPerangkatLunak",
@@ -28,23 +27,21 @@ const updateProfileSchema = z.object({
   dosenPembimbingId: z.string().optional(),
 });
 
-/**
- * Server action to update user profile
- * This action validates input, checks authentication, and updates the user profile
- */
-export async function updateProfile(formData: FormData) {
+export async function updateMahasiswaProfileByAdmin(
+  userId: string,
+  formData: FormData
+) {
   try {
-    // Get the current session
     const session = await auth();
 
-    if (!session?.user?.id) {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
       return {
         success: false,
-        error: "Anda harus login untuk mengupdate profil",
+        error:
+          "Akses ditolak. Hanya admin yang dapat mengedit profil mahasiswa.",
       };
     }
 
-    // Extract form data
     const rawData = {
       name: formData.get("name") as string,
       nim: formData.get("nim") as string,
@@ -53,8 +50,7 @@ export async function updateProfile(formData: FormData) {
       dosenPembimbingId: formData.get("dosenPembimbingId") as string,
     };
 
-    // Validate the input data
-    const validationResult = updateProfileSchema.safeParse(rawData);
+    const validationResult = updateMahasiswaProfileSchema.safeParse(rawData);
 
     if (!validationResult.success) {
       return {
@@ -66,13 +62,12 @@ export async function updateProfile(formData: FormData) {
 
     const data = validationResult.data;
 
-    // Check if NIM is already taken by another user (if provided)
     if (data.nim) {
       const existingUser = await prisma.user.findUnique({
         where: { nim: data.nim },
       });
 
-      if (existingUser && existingUser.id !== session.user.id) {
+      if (existingUser && existingUser.id !== userId) {
         return {
           success: false,
           error: "NIM sudah digunakan oleh pengguna lain",
@@ -80,49 +75,48 @@ export async function updateProfile(formData: FormData) {
       }
     }
 
-    // Update the user profile
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: {
         name: data.name,
         nim: data.nim || null,
         prodi: data.prodi || null,
         telepon: data.telepon || null,
-        updatedAt: new Date(),
         dosenPembimbingId: data.dosenPembimbingId || null,
+        updatedAt: new Date(),
       },
     });
 
-    // Revalidate the profile page to show updated data
-    revalidatePath("/profile");
+    revalidatePath("/data-mahasiswa");
+    revalidatePath(`/data-mahasiswa/${userId}`);
 
     return {
       success: true,
-      message: "Profil berhasil diperbarui",
+      message: "Profil mahasiswa berhasil diperbarui",
     };
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("Error updating mahasiswa profile:", error);
     return {
       success: false,
-      error: "Terjadi kesalahan saat memperbarui profil",
+      error: "Terjadi kesalahan saat memperbarui profil mahasiswa",
     };
   }
 }
 
-/**
- * Server action to get current user profile data
- * This is used to pre-populate the form with existing data
- */
-export async function getUserProfile() {
+export async function getMahasiswaProfile(userId: string) {
   try {
     const session = await auth();
 
-    if (!session?.user?.id) {
-      return null;
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
+      return {
+        success: false,
+        error:
+          "Akses ditolak. Hanya admin yang dapat mengakses profil mahasiswa.",
+      };
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId, role: "MAHASISWA" },
       select: {
         id: true,
         name: true,
@@ -131,17 +125,35 @@ export async function getUserProfile() {
         role: true,
         nim: true,
         prodi: true,
-        departemen: true,
         telepon: true,
+        dosenPembimbingId: true,
+        dosenPembimbing: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
-        dosenPembimbingId: true,
       },
     });
 
-    return user;
+    if (!user) {
+      return {
+        success: false,
+        error: "Profil mahasiswa tidak ditemukan",
+      };
+    }
+
+    return {
+      success: true,
+      data: user,
+    };
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return null;
+    console.error("Error fetching mahasiswa profile:", error);
+    return {
+      success: false,
+      error: "Terjadi kesalahan saat mengambil profil mahasiswa",
+    };
   }
 }

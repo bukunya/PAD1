@@ -22,14 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Camera, Save, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { updateProfile, getUserProfile } from "@/lib/actions/profile";
+import { updateProfile, getUserProfile } from "@/lib/actions/profile/profile";
 import { Prodi } from "@/generated/prisma";
-import { statistics } from "@/lib/actions/statistics";
+// import { statistics } from "@/lib/actions/statistics";
 
-/**
- * Profile component for managing user profile information
- * Integrates with Auth.js v5 for session management and server actions for data updates
- */
 export function Profile() {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +36,6 @@ export function Profile() {
   } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     nim: "",
@@ -49,7 +44,6 @@ export function Profile() {
     dosenPembimbing: "",
   });
 
-  // User data from database
   const [userData, setUserData] = useState<{
     id: string;
     name: string | null;
@@ -66,7 +60,6 @@ export function Profile() {
     Array<{ id: string; name: string | null }>
   >([]);
 
-  // Load user profile data on component mount
   useEffect(() => {
     async function loadProfile() {
       if (status === "loading") return;
@@ -106,7 +99,6 @@ export function Profile() {
     loadProfile();
   }, [session, status]);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -129,7 +121,6 @@ export function Profile() {
           type: "success",
           text: result.message || "Profil berhasil diperbarui",
         });
-        // Refresh user data
         const updatedProfile = await getUserProfile();
         if (updatedProfile) {
           setUserData(updatedProfile);
@@ -155,16 +146,13 @@ export function Profile() {
     }
   };
 
-  // Handle input changes
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors((prev) => ({ ...prev, [field]: [] }));
     }
   };
 
-  // Format Prodi enum values for display
   const formatProdi = (prodi: Prodi) => {
     const formatMap: Record<Prodi, string> = {
       TeknologiRekayasaPerangkatLunak: "Teknologi Rekayasa Perangkat Lunak",
@@ -176,7 +164,6 @@ export function Profile() {
     return formatMap[prodi];
   };
 
-  // Get user initials for avatar fallback
   const getInitials = (name: string | null) => {
     if (!name) return "U";
     return name
@@ -187,7 +174,6 @@ export function Profile() {
       .slice(0, 2);
   };
 
-  // Show loading state while checking authentication
   if (status === "loading" || isLoading) {
     return (
       <div className="w-full max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
@@ -198,7 +184,6 @@ export function Profile() {
     );
   }
 
-  // Show message if user is not authenticated
   if (!session?.user) {
     return (
       <div className="w-full max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
@@ -214,14 +199,12 @@ export function Profile() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Main User Data Section */}
       <div className="lg:col-span-2">
         <Card variant={"invisible"}>
           <CardHeader>
             <CardTitle className="text-2xl">Profil</CardTitle>
           </CardHeader>
 
-          {/* Status Messages */}
           {message && (
             <div className="px-6">
               <Alert
@@ -239,7 +222,6 @@ export function Profile() {
 
           <form onSubmit={handleSubmit}>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name Field */}
               <div className="space-y-2">
                 <Label htmlFor="nama">Nama Lengkap *</Label>
                 <Input
@@ -257,7 +239,6 @@ export function Profile() {
                 )}
               </div>
 
-              {/* NIM Field */}
               <div className="space-y-2">
                 {userData?.role === "MAHASISWA" ? (
                   <Label htmlFor="nim">NIM</Label>
@@ -279,7 +260,6 @@ export function Profile() {
                 )}
               </div>
 
-              {/* Program Studi Field */}
               <div className="space-y-2">
                 <Label htmlFor="prodi">Program Studi</Label>
                 <Select
@@ -334,7 +314,6 @@ export function Profile() {
                 </div>
               )}
 
-              {/* Department Field (Read-only) */}
               <div className="space-y-2">
                 <Label htmlFor="departemen">Departemen</Label>
                 <Input
@@ -347,7 +326,6 @@ export function Profile() {
                 />
               </div>
 
-              {/* Email Field (Read-only) */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -358,7 +336,6 @@ export function Profile() {
                 />
               </div>
 
-              {/* Phone Number Field */}
               <div className="space-y-2">
                 <Label htmlFor="telepon">No. Telepon</Label>
                 <Input
@@ -399,7 +376,6 @@ export function Profile() {
         </Card>
       </div>
 
-      {/* Profile Photo Section */}
       <div className="lg:col-span-1">
         <Card variant={"invisible"}>
           <CardHeader>

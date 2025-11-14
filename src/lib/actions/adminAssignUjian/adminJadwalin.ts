@@ -8,11 +8,45 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
-} from "./googleCalendar";
-import { createMultipleNotifications } from "./notifications";
+} from "../googleCalendar/googleCalendar";
+import { createMultipleNotifications } from "../notifikasi/notifications";
 import { formatNotificationMessage } from "@/lib/utils/notificationHelpers";
 
-// Define the schema for admin assignment
+export async function getAllDosen() {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
+      return {
+        success: false,
+        error: "Akses ditolak",
+      };
+    }
+
+    const dosen = await prisma.user.findMany({
+      where: { role: "DOSEN" },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return {
+      success: true,
+      data: dosen,
+    };
+  } catch (error) {
+    console.error("Error fetching dosen list:", error);
+    return {
+      success: false,
+      error: "Terjadi kesalahan saat mengambil data dosen",
+    };
+  }
+}
+
 const assignUjianSchema = z.object({
   ujianId: z.string().min(1, "ID Ujian tidak valid"),
   dosenPenguji1Id: z.string().min(1, "Dosen Penguji 1 wajib dipilih"),
@@ -23,9 +57,6 @@ const assignUjianSchema = z.object({
   ruangan: z.string().min(1, "Ruangan wajib diisi"),
 });
 
-/**
- * Server action to get ujian details for admin assignment
- */
 export async function getUjianDetails(ujianId: string) {
   try {
     const session = await auth();
@@ -103,9 +134,129 @@ export async function getUjianDetails(ujianId: string) {
   }
 }
 
-/**
- * Server action to assign dosen penguji and schedule ujian
- */
+export async function getAvailableDosen(
+  tanggalUjian: string,
+  jamMulai: string,
+  jamSelesai: string,
+  excludeUjianId?: string
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
+      return {
+        success: false,
+        error: "Akses ditolak",
+      };
+    }
+
+    const selectedDate = new Date(tanggalUjian);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      return {
+        success: false,
+        error: "Tidak dapat menjadwalkan ujian pada tanggal yang sudah lewat",
+      };
+    }
+
+    const [startHour, startMinute] = jamMulai.split(":").map(Number);
+    const [endHour, endMinute] = jamSelesai.split(":").map(Number);
+
+    const startTime = new Date(selectedDate);
+    startTime.setHours(startHour, startMinute, 0, 0);
+
+    const endTime = new Date(selectedDate);
+    endTime.setHours(endHour, endMinute, 0, 0);
+
+    if (endTime <= startTime) {
+      return {
+        success: false,
+        error: "Jam selesai harus lebih besar dari jam mulai",
+      };
+    }
+
+    const allDosen = await prisma.user.findMany({
+      where: { role: "DOSEN" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const conflictingExams = await prisma.ujian.findMany({
+      where: {
+        tanggalUjian: {
+          gte: new Date(selectedDate.setHours(0, 0, 0, 0)),
+          lt: new Date(selectedDate.setHours(23, 59, 59, 999)),
+        },
+        status: "DIJADWALKAN",
+        jamMulai: { not: null },
+        jamSelesai: { not: null },
+        ...(excludeUjianId && { id: { not: excludeUjianId } }),
+      },
+      select: {
+        id: true,
+        jamMulai: true,
+        jamSelesai: true,
+        dosenPembimbingId: true,
+        dosenPenguji: {
+          select: {
+            dosenId: true,
+          },
+        },
+      },
+    });
+
+    const hasTimeOverlap = (
+      exam1Start: Date,
+      exam1End: Date,
+      exam2Start: Date,
+      exam2End: Date
+    ) => {
+      return exam1Start < exam2End && exam2Start < exam1End;
+    };
+
+    const busyDosenIds = new Set<string>();
+
+    conflictingExams.forEach((exam) => {
+      if (exam.jamMulai && exam.jamSelesai) {
+        const examStart = new Date(exam.jamMulai);
+        const examEnd = new Date(exam.jamSelesai);
+
+        if (hasTimeOverlap(startTime, endTime, examStart, examEnd)) {
+          if (exam.dosenPembimbingId) {
+            busyDosenIds.add(exam.dosenPembimbingId);
+          }
+
+          exam.dosenPenguji.forEach((penguji) => {
+            busyDosenIds.add(penguji.dosenId);
+          });
+        }
+      }
+    });
+
+    const availableDosen = allDosen.filter(
+      (dosen) => !busyDosenIds.has(dosen.id)
+    );
+
+    return {
+      success: true,
+      data: {
+        available: availableDosen,
+        busy: allDosen.filter((dosen) => busyDosenIds.has(dosen.id)),
+      },
+    };
+  } catch (error) {
+    console.error("Error getting available dosen:", error);
+    return {
+      success: false,
+      error: "Terjadi kesalahan saat mengambil data dosen",
+    };
+  }
+}
+
 export async function assignUjian(formData: FormData) {
   try {
     const session = await auth();
@@ -124,7 +275,6 @@ export async function assignUjian(formData: FormData) {
       };
     }
 
-    // Extract form data
     const rawData = {
       ujianId: formData.get("ujianId") as string,
       dosenPenguji1Id: formData.get("dosenPenguji1") as string,
@@ -135,7 +285,6 @@ export async function assignUjian(formData: FormData) {
       ruangan: formData.get("ruangan") as string,
     };
 
-    // Validate the input data
     const validationResult = assignUjianSchema.safeParse(rawData);
 
     if (!validationResult.success) {
@@ -148,7 +297,17 @@ export async function assignUjian(formData: FormData) {
 
     const data = validationResult.data;
 
-    // Check if two dosen penguji are different
+    const selectedDate = new Date(data.tanggalUjian);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      return {
+        success: false,
+        error: "Tidak dapat menjadwalkan ujian pada tanggal yang sudah lewat",
+      };
+    }
+
     if (data.dosenPenguji1Id === data.dosenPenguji2Id) {
       return {
         success: false,
@@ -156,7 +315,6 @@ export async function assignUjian(formData: FormData) {
       };
     }
 
-    // Check if ujian exists
     const ujian = await prisma.ujian.findUnique({
       where: { id: data.ujianId },
       include: {
@@ -168,6 +326,7 @@ export async function assignUjian(formData: FormData) {
         },
         dosenPembimbing: {
           select: {
+            id: true,
             email: true,
             name: true,
           },
@@ -182,7 +341,16 @@ export async function assignUjian(formData: FormData) {
       };
     }
 
-    // Combine date and time
+    if (
+      data.dosenPenguji1Id === ujian.dosenPembimbingId ||
+      data.dosenPenguji2Id === ujian.dosenPembimbingId
+    ) {
+      return {
+        success: false,
+        error: `Dosen pembimbing (${ujian.dosenPembimbing.name}) tidak dapat menjadi dosen penguji`,
+      };
+    }
+
     const tanggalUjian = new Date(data.tanggalUjian);
     const [jamMulaiHour, jamMulaiMinute] = data.jamMulai.split(":");
     const [jamSelesaiHour, jamSelesaiMinute] = data.jamSelesai.split(":");
@@ -193,7 +361,6 @@ export async function assignUjian(formData: FormData) {
     const jamSelesai = new Date(tanggalUjian);
     jamSelesai.setHours(parseInt(jamSelesaiHour), parseInt(jamSelesaiMinute));
 
-    // Validate time logic
     if (jamSelesai <= jamMulai) {
       return {
         success: false,
@@ -201,7 +368,53 @@ export async function assignUjian(formData: FormData) {
       };
     }
 
-    // Fetch dosen penguji details for calendar event
+    const availabilityCheck = await getAvailableDosen(
+      data.tanggalUjian,
+      data.jamMulai,
+      data.jamSelesai,
+      data.ujianId
+    );
+
+    if (!availabilityCheck.success) {
+      return {
+        success: false,
+        error: availabilityCheck.error || "Gagal memeriksa ketersediaan dosen",
+      };
+    }
+
+    const availableDosenIds = new Set(
+      availabilityCheck.data?.available.map((d) => d.id) || []
+    );
+
+    if (!availableDosenIds.has(ujian.dosenPembimbingId)) {
+      return {
+        success: false,
+        error: `Dosen pembimbing ${ujian.dosenPembimbing.name} sudah memiliki jadwal ujian pada waktu tersebut`,
+      };
+    }
+
+    if (!availableDosenIds.has(data.dosenPenguji1Id)) {
+      const dosenPenguji1 = await prisma.user.findUnique({
+        where: { id: data.dosenPenguji1Id },
+        select: { name: true },
+      });
+      return {
+        success: false,
+        error: `Dosen penguji 1 (${dosenPenguji1?.name}) sudah memiliki jadwal ujian pada waktu tersebut`,
+      };
+    }
+
+    if (!availableDosenIds.has(data.dosenPenguji2Id)) {
+      const dosenPenguji2 = await prisma.user.findUnique({
+        where: { id: data.dosenPenguji2Id },
+        select: { name: true },
+      });
+      return {
+        success: false,
+        error: `Dosen penguji 2 (${dosenPenguji2?.name}) sudah memiliki jadwal ujian pada waktu tersebut`,
+      };
+    }
+
     const dosenPenguji1 = await prisma.user.findUnique({
       where: { id: data.dosenPenguji1Id },
       select: { email: true, name: true },
@@ -219,20 +432,16 @@ export async function assignUjian(formData: FormData) {
       };
     }
 
-    // Prepare calendar event data
     const attendeeEmails: string[] = [];
 
-    // Add mahasiswa email
     if (ujian.mahasiswa.email) {
       attendeeEmails.push(ujian.mahasiswa.email);
     }
 
-    // Add dosen pembimbing email
     if (ujian.dosenPembimbing.email) {
       attendeeEmails.push(ujian.dosenPembimbing.email);
     }
 
-    // Add dosen penguji emails
     if (dosenPenguji1.email) {
       attendeeEmails.push(dosenPenguji1.email);
     }
@@ -240,7 +449,6 @@ export async function assignUjian(formData: FormData) {
       attendeeEmails.push(dosenPenguji2.email);
     }
 
-    // Format description: "SIMPENSI - [Judul Tugas Akhir] - [Ruangan] - [Pembimbing/Penguji]"
     const description = `SIMPENSI - ${ujian.judul} - ${
       data.ruangan
     } - Pembimbing: ${ujian.dosenPembimbing.name || "N/A"} / Penguji: ${
@@ -249,49 +457,55 @@ export async function assignUjian(formData: FormData) {
 
     let calendarEventId = ujian.googleCalendarEventId;
     let calendarResult;
+    let calendarCreated = false;
 
-    // Create or update Google Calendar event
-    if (calendarEventId) {
-      // Update existing event
-      calendarResult = await updateCalendarEvent(calendarEventId, {
-        summary: `Ujian TA - ${ujian.mahasiswa.name}`,
-        description: description,
-        location: data.ruangan,
-        startDateTime: jamMulai.toISOString(),
-        endDateTime: jamSelesai.toISOString(),
-        attendees: attendeeEmails,
-      });
-    } else {
-      // Create new event
-      calendarResult = await createCalendarEvent({
-        summary: `Ujian TA - ${ujian.mahasiswa.name}`,
-        description: description,
-        location: data.ruangan,
-        startDateTime: jamMulai.toISOString(),
-        endDateTime: jamSelesai.toISOString(),
-        attendees: attendeeEmails,
-      });
+    try {
+      if (calendarEventId) {
+        calendarResult = await updateCalendarEvent(calendarEventId, {
+          summary: `Ujian TA - ${ujian.mahasiswa.name}`,
+          description: description,
+          location: data.ruangan,
+          startDateTime: jamMulai.toISOString(),
+          endDateTime: jamSelesai.toISOString(),
+          attendees: attendeeEmails,
+        });
+      } else {
+        calendarResult = await createCalendarEvent({
+          summary: `Ujian TA - ${ujian.mahasiswa.name}`,
+          description: description,
+          location: data.ruangan,
+          startDateTime: jamMulai.toISOString(),
+          endDateTime: jamSelesai.toISOString(),
+          attendees: attendeeEmails,
+        });
 
-      if (calendarResult.success && calendarResult.eventId) {
-        calendarEventId = calendarResult.eventId;
+        if (calendarResult.success && calendarResult.eventId) {
+          calendarEventId = calendarResult.eventId;
+        }
       }
-    }
 
-    // Log calendar result (optional, for debugging)
-    if (!calendarResult.success) {
-      console.warn(
-        "Failed to create/update calendar event:",
-        calendarResult.error
+      if (calendarResult.success) {
+        calendarCreated = true;
+      } else {
+        console.warn(
+          "Calendar event creation/update failed:",
+          calendarResult.error
+        );
+      }
+    } catch (calendarError) {
+      console.error(
+        "Error during calendar operation (continuing anyway):",
+        calendarError
       );
-      // Continue with the database update even if calendar fails
+      calendarResult = {
+        success: false,
+        error: "Gagal membuat event kalender, tapi penjadwalan tetap berhasil",
+      };
     }
 
-    // Check if this is a new schedule or an update
     const isNewSchedule = ujian.status !== "DIJADWALKAN";
 
-    // Update ujian and assign dosen penguji in a transaction
     await prisma.$transaction(async (tx) => {
-      // Update ujian with schedule and calendar event ID
       await tx.ujian.update({
         where: { id: data.ujianId },
         data: {
@@ -305,12 +519,10 @@ export async function assignUjian(formData: FormData) {
         },
       });
 
-      // Delete existing dosen penguji assignments (if any)
       await tx.ujianDosenPenguji.deleteMany({
         where: { ujianId: data.ujianId },
       });
 
-      // Create new dosen penguji assignments
       await tx.ujianDosenPenguji.createMany({
         data: [
           {
@@ -325,11 +537,9 @@ export async function assignUjian(formData: FormData) {
       });
     });
 
-    // Create notifications
     const notifications = [];
 
     if (isNewSchedule) {
-      // New schedule - notify mahasiswa, dosen pembimbing, and both penguji
       notifications.push({
         userId: ujian.mahasiswaId,
         ujianId: data.ujianId,
@@ -344,7 +554,9 @@ export async function assignUjian(formData: FormData) {
         userId: ujian.dosenPembimbingId,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Pengajuan oleh ${ujian.mahasiswa.name || "mahasiswa"} sudah dijadwalkan`,
+          `Pengajuan oleh ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } sudah dijadwalkan`,
           tanggalUjian,
           jamMulai
         ),
@@ -354,7 +566,9 @@ export async function assignUjian(formData: FormData) {
         userId: data.dosenPenguji1Id,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Pengajuan oleh ${ujian.mahasiswa.name || "mahasiswa"} sudah dijadwalkan`,
+          `Pengajuan oleh ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } sudah dijadwalkan`,
           tanggalUjian,
           jamMulai
         ),
@@ -364,13 +578,14 @@ export async function assignUjian(formData: FormData) {
         userId: data.dosenPenguji2Id,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Pengajuan oleh ${ujian.mahasiswa.name || "mahasiswa"} sudah dijadwalkan`,
+          `Pengajuan oleh ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } sudah dijadwalkan`,
           tanggalUjian,
           jamMulai
         ),
       });
     } else {
-      // Schedule updated - notify dosen pembimbing and both penguji (not mahasiswa)
       const newDate = tanggalUjian.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
@@ -381,7 +596,9 @@ export async function assignUjian(formData: FormData) {
         userId: ujian.dosenPembimbingId,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Jadwal ujian ${ujian.mahasiswa.name || "mahasiswa"} diubah ke ${newDate}`,
+          `Jadwal ujian ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } diubah ke ${newDate}`,
           tanggalUjian,
           jamMulai
         ),
@@ -391,7 +608,9 @@ export async function assignUjian(formData: FormData) {
         userId: data.dosenPenguji1Id,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Jadwal ujian ${ujian.mahasiswa.name || "mahasiswa"} diubah ke ${newDate}`,
+          `Jadwal ujian ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } diubah ke ${newDate}`,
           tanggalUjian,
           jamMulai
         ),
@@ -401,7 +620,9 @@ export async function assignUjian(formData: FormData) {
         userId: data.dosenPenguji2Id,
         ujianId: data.ujianId,
         message: formatNotificationMessage(
-          `Jadwal ujian ${ujian.mahasiswa.name || "mahasiswa"} diubah ke ${newDate}`,
+          `Jadwal ujian ${
+            ujian.mahasiswa.name || "mahasiswa"
+          } diubah ke ${newDate}`,
           tanggalUjian,
           jamMulai
         ),
@@ -410,31 +631,31 @@ export async function assignUjian(formData: FormData) {
 
     await createMultipleNotifications(notifications);
 
-    // Revalidate relevant pages
     revalidatePath("/detail-jadwal");
     revalidatePath(`/admin-assign/${data.ujianId}`);
 
-    // Build success message
     let successMessage =
       "Ujian berhasil dijadwalkan dan dosen penguji berhasil ditugaskan";
-    if (calendarResult.success) {
+
+    if (calendarCreated && calendarResult?.success) {
       successMessage +=
-        ". Event kalender telah dibuat/diperbarui dan undangan dikirim ke semua peserta.";
-    } else if (calendarResult.needsReauth) {
+        ". Event Google Calendar telah dibuat dan undangan dikirim ke semua peserta.";
+    } else if (calendarResult?.needsReauth) {
       successMessage +=
-        ". Namun, event kalender gagal dibuat. Silakan sign out dan sign in kembali untuk menyambungkan Google Calendar.";
-    } else {
+        ". Namun, untuk membuat event Google Calendar, Anda perlu menyambungkan ulang akun Google. Silakan klik profil Anda, sign out, lalu sign in kembali.";
+    } else if (!calendarCreated) {
       successMessage +=
-        ". Namun, event kalender gagal dibuat: " +
-        (calendarResult.error || "Unknown error");
+        ". Event Google Calendar tidak dapat dibuat, tapi jadwal ujian tetap tersimpan. Anda dapat membuat event kalender secara manual atau menyambungkan ulang akun Google Anda.";
     }
 
     return {
       success: true,
       message: successMessage,
-      calendarEventLink: calendarResult.success
-        ? calendarResult.htmlLink
-        : undefined,
+      calendarEventLink:
+        calendarCreated && calendarResult?.success
+          ? calendarResult.htmlLink
+          : undefined,
+      needsCalendarReauth: calendarResult?.needsReauth || false,
     };
   } catch (error) {
     console.error("Error assigning ujian:", error);

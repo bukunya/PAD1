@@ -12,8 +12,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { statistics } from "@/lib/actions/statistics";
-import { getUjianDetails, assignUjian } from "@/lib/actions/adminAssign";
+import {
+  getUjianDetails,
+  assignUjian,
+  getAvailableDosen,
+  getAllDosen,
+} from "@/lib/actions/adminAssignUjian/adminJadwalin";
 import { AlertCircle, CheckCircle, Loader2, Save } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, use } from "react";
@@ -50,7 +54,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
     text: string;
     calendarLink?: string;
   } | null>(null);
@@ -70,6 +74,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [dosenList, setDosenList] = useState<
     Array<{ id: string; name: string | null }>
   >([]);
+  const [availableDosen, setAvailableDosen] = useState<
+    Array<{ id: string; name: string | null }>
+  >([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [shouldCheckAvailability, setShouldCheckAvailability] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -93,7 +102,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         // Load ujian details and dosen list in parallel
         const [ujianResult, dosensResult] = await Promise.all([
           getUjianDetails(resolvedParams.id),
-          statistics(),
+          getAllDosen(),
         ]);
 
         if (!ujianResult.success) {
@@ -129,6 +138,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               ...prev,
               jamSelesai: jamSelesai.toTimeString().slice(0, 5),
             }));
+          } else if (ujianResult.data.jamMulai) {
+            // Auto-fill jam selesai to 2 hours after jam mulai if not set
+            const jamMulai = new Date(ujianResult.data.jamMulai);
+            jamMulai.setHours(jamMulai.getHours() + 2);
+            setFormData((prev) => ({
+              ...prev,
+              jamSelesai: jamMulai.toTimeString().slice(0, 5),
+            }));
           }
           if (ujianResult.data.ruangan) {
             setFormData((prev) => ({
@@ -143,15 +160,26 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               dosenPenguji2: ujianResult.data.dosenPenguji[1]?.dosen.id || "",
             }));
           }
+
+          // Trigger availability check if we have all required data
+          if (
+            ujianResult.data.tanggalUjian &&
+            ujianResult.data.jamMulai &&
+            (ujianResult.data.jamSelesai || ujianResult.data.jamMulai)
+          ) {
+            setShouldCheckAvailability(true);
+          }
         }
 
         if (dosensResult.success && dosensResult.data) {
-          setDosenList(
-            dosensResult.data.dosen.map((d) => ({
+          const allDosen = dosensResult.data.map(
+            (d: { id: string; name: string | null }) => ({
               id: d.id,
               name: d.name || "",
-            })) || []
+            })
           );
+          setDosenList(allDosen);
+          setAvailableDosen(allDosen); // Initially show all
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -164,8 +192,97 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     loadData();
   }, [session, status, resolvedParams.id]);
 
+  // Check dosen availability when date/time changes
+  useEffect(() => {
+    async function checkAvailability() {
+      if (
+        !formData.tanggalUjian ||
+        !formData.jamMulai ||
+        !formData.jamSelesai
+      ) {
+        setAvailableDosen(dosenList);
+        return;
+      }
+
+      setIsCheckingAvailability(true);
+      try {
+        const result = await getAvailableDosen(
+          formData.tanggalUjian,
+          formData.jamMulai,
+          formData.jamSelesai,
+          resolvedParams.id
+        );
+
+        if (result.success && result.data) {
+          setAvailableDosen(result.data.available);
+
+          // Clear selected dosen if they become unavailable
+          if (formData.dosenPenguji1) {
+            const isPenguji1Available = result.data.available.some(
+              (d) => d.id === formData.dosenPenguji1
+            );
+            if (!isPenguji1Available) {
+              setFormData((prev) => ({ ...prev, dosenPenguji1: "" }));
+              setMessage({
+                type: "error",
+                text: "Dosen Penguji 1 yang dipilih tidak tersedia pada waktu ini",
+              });
+            }
+          }
+
+          if (formData.dosenPenguji2) {
+            const isPenguji2Available = result.data.available.some(
+              (d) => d.id === formData.dosenPenguji2
+            );
+            if (!isPenguji2Available) {
+              setFormData((prev) => ({ ...prev, dosenPenguji2: "" }));
+              setMessage({
+                type: "error",
+                text: "Dosen Penguji 2 yang dipilih tidak tersedia pada waktu ini",
+              });
+            }
+          }
+        } else if (result.error) {
+          setMessage({
+            type: "error",
+            text: result.error,
+          });
+        }
+      } catch (error) {
+        console.error("Error checking availability:", error);
+      } finally {
+        setIsCheckingAvailability(false);
+      }
+    }
+
+    if (shouldCheckAvailability || formData.tanggalUjian) {
+      checkAvailability();
+      setShouldCheckAvailability(false);
+    }
+  }, [
+    formData.tanggalUjian,
+    formData.jamMulai,
+    formData.jamSelesai,
+    dosenList,
+    resolvedParams.id,
+    shouldCheckAvailability,
+  ]);
+
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+
+      // Auto-fill jam selesai when jam mulai changes (2 hours default)
+      if (field === "jamMulai" && value && !prev.jamSelesai) {
+        const [hours, minutes] = value.split(":").map(Number);
+        const endTime = new Date();
+        endTime.setHours(hours + 2, minutes);
+        newData.jamSelesai = endTime.toTimeString().slice(0, 5);
+      }
+
+      return newData;
+    });
+
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors((prev) => ({ ...prev, [field]: [] }));
@@ -191,8 +308,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       const result = await assignUjian(formDataToSend);
 
       if (result.success) {
+        const messageType = result.needsCalendarReauth ? "warning" : "success";
         setMessage({
-          type: "success",
+          type: messageType,
           text: result.message || "Ujian berhasil dijadwalkan",
           calendarLink: result.calendarEventLink || undefined,
         });
@@ -269,15 +387,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           {/* Status Messages */}
           {message && (
             <Alert
-              variant={message.type === "error" ? "destructive" : "default"}
-              className="mb-6"
+              variant={
+                message.type === "error"
+                  ? "destructive"
+                  : message.type === "warning"
+                  ? "default"
+                  : "default"
+              }
+              className={`mb-6 ${
+                message.type === "warning"
+                  ? "border-yellow-500 bg-yellow-50"
+                  : ""
+              }`}
             >
               {message.type === "success" ? (
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : message.type === "warning" ? (
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
               ) : (
                 <AlertCircle className="h-4 w-4" />
               )}
-              <AlertDescription>
+              <AlertDescription
+                className={message.type === "warning" ? "text-yellow-900" : ""}
+              >
                 {message.text}
                 {message.calendarLink && (
                   <div className="mt-2">
@@ -326,6 +458,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 id="tanggalUjian"
                 name="tanggalUjian"
                 type="date"
+                min={new Date().toISOString().split("T")[0]}
                 value={formData.tanggalUjian}
                 onChange={(e) =>
                   handleInputChange("tanggalUjian", e.target.value)
@@ -361,7 +494,12 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Jam Selesai */}
             <div className="space-y-2">
-              <Label htmlFor="jamSelesai">Jam Selesai *</Label>
+              <Label htmlFor="jamSelesai">
+                Jam Selesai *{" "}
+                {formData.jamMulai &&
+                  !formData.jamSelesai &&
+                  "(otomatis +2 jam)"}
+              </Label>
               <Input
                 id="jamSelesai"
                 name="jamSelesai"
@@ -402,23 +540,43 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Dosen Penguji 1 */}
             <div className="space-y-2">
-              <Label htmlFor="dosenPenguji1">Dosen Penguji 1 *</Label>
+              <Label htmlFor="dosenPenguji1">
+                Dosen Penguji 1 *
+                {isCheckingAvailability && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (Memeriksa ketersediaan...)
+                  </span>
+                )}
+              </Label>
               <Select
                 value={formData.dosenPenguji1}
                 onValueChange={(value) =>
                   handleInputChange("dosenPenguji1", value)
                 }
-                disabled={isSaving}
+                disabled={isSaving || isCheckingAvailability}
               >
                 <SelectTrigger id="dosenPenguji1">
                   <SelectValue placeholder="Pilih Dosen Penguji 1" />
                 </SelectTrigger>
                 <SelectContent>
-                  {dosenList.map((dosen) => (
-                    <SelectItem key={dosen.id} value={dosen.id}>
-                      {dosen.name}
-                    </SelectItem>
-                  ))}
+                  {availableDosen
+                    .filter(
+                      (d) =>
+                        d.id !== formData.dosenPenguji2 &&
+                        d.id !== ujianData.dosenPembimbing.id
+                    )
+                    .map((dosen) => (
+                      <SelectItem key={dosen.id} value={dosen.id}>
+                        {dosen.name}
+                      </SelectItem>
+                    ))}
+                  {availableDosen.filter(
+                    (d) => d.id !== ujianData.dosenPembimbing.id
+                  ).length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Tidak ada dosen tersedia pada waktu ini
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
               {fieldErrors.dosenPenguji1Id && (
@@ -430,23 +588,43 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Dosen Penguji 2 */}
             <div className="space-y-2">
-              <Label htmlFor="dosenPenguji2">Dosen Penguji 2 *</Label>
+              <Label htmlFor="dosenPenguji2">
+                Dosen Penguji 2 *
+                {isCheckingAvailability && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (Memeriksa ketersediaan...)
+                  </span>
+                )}
+              </Label>
               <Select
                 value={formData.dosenPenguji2}
                 onValueChange={(value) =>
                   handleInputChange("dosenPenguji2", value)
                 }
-                disabled={isSaving}
+                disabled={isSaving || isCheckingAvailability}
               >
                 <SelectTrigger id="dosenPenguji2">
                   <SelectValue placeholder="Pilih Dosen Penguji 2" />
                 </SelectTrigger>
                 <SelectContent>
-                  {dosenList.map((dosen) => (
-                    <SelectItem key={dosen.id} value={dosen.id}>
-                      {dosen.name}
-                    </SelectItem>
-                  ))}
+                  {availableDosen
+                    .filter(
+                      (d) =>
+                        d.id !== formData.dosenPenguji1 &&
+                        d.id !== ujianData.dosenPembimbing.id
+                    )
+                    .map((dosen) => (
+                      <SelectItem key={dosen.id} value={dosen.id}>
+                        {dosen.name}
+                      </SelectItem>
+                    ))}
+                  {availableDosen.filter(
+                    (d) => d.id !== ujianData.dosenPembimbing.id
+                  ).length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Tidak ada dosen tersedia pada waktu ini
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
               {fieldErrors.dosenPenguji2Id && (

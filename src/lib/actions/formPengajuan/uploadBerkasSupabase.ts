@@ -1,12 +1,12 @@
-"use server"; // Menandakan ini adalah Server Action
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { supabaseAdmin } from "@/lib/supabase";
-import { auth } from "@/lib/auth"; // Impor Auth.js Anda
+import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { createNotification } from "./notifications";
+import { createNotification } from "../notifikasi/notifications";
+import { generateRandomString } from "@/lib/utils/random";
 
-// Definisikan state untuk formulir
 export type FormState = {
   success: boolean;
   message: string;
@@ -16,18 +16,15 @@ export async function submitBerkas(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  // 1. Dapatkan sesi pengguna
   const session = await auth();
   if (!session?.user || session.user.role !== "MAHASISWA") {
     return { success: false, message: "Akses ditolak." };
   }
 
-  // 2. Dapatkan data dari formulir
   const file = formData.get("berkas") as File;
   const judul = formData.get("judul") as string;
-  const dosenPembimbingId = formData.get("dosenPembimbingId") as string; // Pastikan Anda memiliki input ini di formulir
+  const dosenPembimbingId = formData.get("dosenPembimbingId") as string;
 
-  // 3. Validasi dasar
   if (!file || file.size === 0) {
     return { success: false, message: "Berkas ujian wajib diunggah." };
   }
@@ -39,14 +36,13 @@ export async function submitBerkas(
   }
 
   try {
-    // 4. Buat nama file yang unik untuk menghindari konflik
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${session.user.id}-${Date.now()}.${fileExtension}`;
-    const filePath = `public/${fileName}`; // Folder 'public' di dalam bucket
+    const randomId = generateRandomString(4);
+    const fileName = `${randomId}-${Date.now()}.${fileExtension}`;
+    const filePath = `public/${fileName}`;
 
-    // 5. Unggah file ke Supabase Storage
     const { error: uploadError } = await supabaseAdmin.storage
-      .from("dokumen") // Nama bucket Anda
+      .from("dokumen")
       .upload(filePath, file);
 
     if (uploadError) {
@@ -57,7 +53,6 @@ export async function submitBerkas(
       };
     }
 
-    // 6. Dapatkan URL publik dari file yang baru diunggah
     const { data: urlData } = supabaseAdmin.storage
       .from("dokumen")
       .getPublicUrl(filePath);
@@ -68,7 +63,6 @@ export async function submitBerkas(
 
     const publicUrl = urlData.publicUrl;
 
-    // 7. Simpan informasi ke database Prisma Anda
     const newUjian = await prisma.ujian.create({
       data: {
         judul: judul,
@@ -79,15 +73,13 @@ export async function submitBerkas(
       },
     });
 
-    // 8. Create notification for mahasiswa
     await createNotification(
       session.user.id,
       newUjian.id,
       "Pengajuan telah dibuat dan dikirim ke sistem"
     );
 
-    // 9. Berhasil!
-    revalidatePath("/dashboard"); // Perbarui halaman dashboard
+    revalidatePath("/dashboard");
     return { success: true, message: "Pengajuan ujian berhasil dikirim." };
   } catch (e: unknown) {
     console.error("Error:", e instanceof Error ? e.message : String(e));

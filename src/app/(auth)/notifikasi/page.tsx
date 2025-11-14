@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { getNotifications } from "@/lib/actions/notifications";
+import { getNotifications } from "@/lib/actions/notifikasi/notifications";
 import {
   Card,
   CardContent,
