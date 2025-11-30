@@ -59,7 +59,7 @@ export async function riwayatUjian(params: PaginationParams = {}) {
     let data: dosenRU[] | adminRU[] = [];
 
     // Build date filter
-    const dateFilter: any = {};
+    const dateFilter: { tanggalUjian?: { gte: Date; lte: Date } } = {};
     if (month && year) {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -78,6 +78,7 @@ export async function riwayatUjian(params: PaginationParams = {}) {
 
     switch (role) {
       case "DOSEN": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let whereClause: any = {
           OR: [
             { dosenPembimbingId: userId },
@@ -142,7 +143,7 @@ export async function riwayatUjian(params: PaginationParams = {}) {
             isDosenPembimbing: item.dosenPembimbingId === userId,
             completed,
           };
-        });
+        }) as dosenRU[];
 
         return {
           success: true,
@@ -214,7 +215,7 @@ export async function riwayatUjian(params: PaginationParams = {}) {
           dosenPembimbing: item.dosenPembimbing?.name || null,
           dosenPenguji1: item.dosenPenguji?.[0]?.dosen?.name || null,
           dosenPenguji2: item.dosenPenguji?.[1]?.dosen?.name || null,
-        }));
+        })) as adminRU[];
 
         return {
           success: true,

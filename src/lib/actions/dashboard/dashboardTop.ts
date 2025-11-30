@@ -62,7 +62,11 @@ export async function dashboardTop() {
           },
           select: {
             id: true,
-            ruangan: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
             jamMulai: true,
             jamSelesai: true,
           },
@@ -77,7 +81,7 @@ export async function dashboardTop() {
 
         const data: dataMahasiswa[] = ujianData.map((item) => ({
           id: item.id,
-          ruangan: item.ruangan,
+          ruangan: item.ruangan?.nama || null,
           jamMulai: item.jamMulai,
           jamSelesai: item.jamSelesai,
         }));
@@ -100,7 +104,11 @@ export async function dashboardTop() {
           },
           select: {
             id: true,
-            ruangan: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
             jamMulai: true,
             jamSelesai: true,
           },
@@ -113,7 +121,7 @@ export async function dashboardTop() {
 
         const data: dataDosen[] = ujianData.map((item) => ({
           id: item.id,
-          ruangan: item.ruangan,
+          ruangan: item.ruangan?.nama || null,
           jamMulai: item.jamMulai,
           jamSelesai: item.jamSelesai,
         }));
@@ -137,7 +145,11 @@ export async function dashboardTop() {
                 image: true,
               },
             },
-            ruangan: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
             jamMulai: true,
             jamSelesai: true,
           },
@@ -154,7 +166,7 @@ export async function dashboardTop() {
           namaMahasiswa: item.mahasiswa?.name || null,
           nim: item.mahasiswa?.nim || null,
           foto: item.mahasiswa?.image || null,
-          ruangan: item.ruangan,
+          ruangan: item.ruangan?.nama || null,
           jamMulai: item.jamMulai,
           jamSelesai: item.jamSelesai,
         }));

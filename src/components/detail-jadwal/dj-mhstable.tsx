@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, addHours } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import type { MahasiswaDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
@@ -22,7 +22,10 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
 
   const formatTime = (start: Date | null, end: Date | null) => {
     if (!start || !end) return "-";
-    return `${format(new Date(start), "HH:mm")} - ${format(new Date(end), "HH:mm")} WIB`;
+    return `${format(addHours(new Date(start), 7), "HH:mm")} - ${format(
+      addHours(new Date(end), 7),
+      "HH:mm"
+    )} WIB`;
   };
 
   if (loading) {
@@ -75,7 +78,9 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
               <div className="grid grid-cols-12 gap-4">
                 {/* No */}
                 <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-900">{idx + 1}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {idx + 1}
+                  </span>
                 </div>
 
                 {/* Judul TA */}
@@ -87,7 +92,9 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
 
                 {/* Tanggal */}
                 <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-gray-900">{formatDate(item.tanggal)}</span>
+                  <span className="text-sm text-gray-900">
+                    {formatDate(item.tanggal)}
+                  </span>
                 </div>
 
                 {/* Jam */}
@@ -99,7 +106,9 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
 
                 {/* Ruangan */}
                 <div className="col-span-3 flex items-center">
-                  <span className="text-sm text-gray-900">{item.ruangan || "-"}</span>
+                  <span className="text-sm text-gray-900">
+                    {item.ruangan || "-"}
+                  </span>
                 </div>
 
                 {/* Aksi */}

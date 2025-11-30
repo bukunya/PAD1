@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma";
 function convertToJakartaTime(utcDateString: string): string {
   const date = new Date(utcDateString);
 
+  // Convert UTC to Jakarta time (UTC+7)
+  date.setUTCHours(date.getUTCHours() + 7);
+
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");

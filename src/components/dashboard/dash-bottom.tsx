@@ -1,17 +1,49 @@
-// src/components/dashboard/dash-bottom.tsx
-"use client";
-
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image";
+import { format, addHours } from "date-fns";
+import { id } from "date-fns/locale";
+
+interface AdminExamItem {
+  id: string;
+  namaMahasiswa: string | null;
+  nim: string | null;
+  foto: string | null;
+  tanggal: Date | null;
+  ruangan: string | null;
+  dosenPembimbing: string | null;
+  dosenPenguji1: string | null;
+  dosenPenguji2: string | null;
+}
+
+interface DosenExamItem {
+  id: string;
+  namaMahasiswa: string | null;
+  nim: string | null;
+  foto: string | null;
+  judulTugasAkhir: string | null;
+  tanggal: Date | null;
+  jamMulai: Date | null;
+  ruangan: string | null;
+  isDosenPembimbing: boolean;
+}
+
+interface MahasiswaExamItem {
+  id: string;
+  judulTugasAkhir: string | null;
+  tanggal: Date | null;
+  jamMulai: Date | null;
+}
+
+interface BottomData {
+  data?: (AdminExamItem | DosenExamItem | MahasiswaExamItem)[];
+}
 
 interface BottomSectionProps {
   role: string;
-  bottomData: any;
+  bottomData: BottomData;
 }
 
 export function BottomSection({ role, bottomData }: BottomSectionProps) {
@@ -28,31 +60,27 @@ export function BottomSection({ role, bottomData }: BottomSectionProps) {
 // Helper functions
 const formatDate = (date: Date | null) => {
   if (!date) return "-";
-  const d = new Date(date);
-  const day = d.getDate().toString().padStart(2, "0");
-  const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return format(new Date(date), "dd MMMM yyyy", { locale: id });
 };
 
 const formatTime = (date: Date | null) => {
   if (!date) return "-";
-  const d = new Date(date);
-  const hours = d.getHours().toString().padStart(2, "0");
-  const minutes = d.getMinutes().toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
+  const adjustedDate = addHours(new Date(date), 7);
+  return format(adjustedDate, "HH:mm");
 };
 
 // Admin View - Daftar Penjadwalan Summary
-function AdminBottomSection({ bottomData }: { bottomData: any }) {
-  const examData = bottomData?.data || [];
+function AdminBottomSection({ bottomData }: { bottomData: BottomData }) {
+  const examData = (bottomData?.data || []) as AdminExamItem[];
   const displayData = examData.slice(0, 5); // Show first 5 for summary
 
   return (
     <Card className="border-none shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Daftar Penjadwalan</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            Daftar Penjadwalan
+          </CardTitle>
           <Link href="/daftar-penjadwalan">
             <Button variant="link" className="text-blue-600">
               Lihat Semua
@@ -88,12 +116,15 @@ function AdminBottomSection({ bottomData }: { bottomData: any }) {
             <tbody>
               {displayData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     Tidak ada jadwal ujian
                   </td>
                 </tr>
               ) : (
-                displayData.map((item: any, index: number) => (
+                displayData.map((item: AdminExamItem) => (
                   <tr key={item.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -104,16 +135,28 @@ function AdminBottomSection({ bottomData }: { bottomData: any }) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{item.namaMahasiswa || "-"}</p>
-                          <p className="text-xs text-gray-500">{item.nim || "-"}</p>
+                          <p className="text-sm font-medium">
+                            {item.namaMahasiswa || "-"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.nim || "-"}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm">{formatDate(item.tanggal)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatDate(item.tanggal)}
+                    </td>
                     <td className="px-4 py-3 text-sm">{item.ruangan || "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.dosenPembimbing || "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.dosenPenguji1 || "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.dosenPenguji2 || "-"}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {item.dosenPembimbing || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {item.dosenPenguji1 || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {item.dosenPenguji2 || "-"}
+                    </td>
                   </tr>
                 ))
               )}
@@ -126,9 +169,8 @@ function AdminBottomSection({ bottomData }: { bottomData: any }) {
 }
 
 // Dosen View - Detail Jadwal Summary
-function DosenBottomSection({ bottomData }: { bottomData: any }) {
-  const [selectedUjianId, setSelectedUjianId] = useState<string | null>(null);
-  const examData = bottomData?.data || [];
+function DosenBottomSection({ bottomData }: { bottomData: BottomData }) {
+  const examData = (bottomData?.data || []) as DosenExamItem[];
   const displayData = examData.slice(0, 5); // Show first 5 for summary
 
   return (
@@ -174,12 +216,15 @@ function DosenBottomSection({ bottomData }: { bottomData: any }) {
             <tbody>
               {displayData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     Tidak ada jadwal ujian
                   </td>
                 </tr>
               ) : (
-                displayData.map((item: any, index: number) => (
+                displayData.map((item: DosenExamItem) => (
                   <tr key={item.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -190,16 +235,24 @@ function DosenBottomSection({ bottomData }: { bottomData: any }) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{item.namaMahasiswa || "-"}</p>
-                          <p className="text-xs text-gray-500">{item.nim || "-"}</p>
+                          <p className="text-sm font-medium">
+                            {item.namaMahasiswa || "-"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.nim || "-"}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm max-w-xs truncate">
                       {item.judulTugasAkhir || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm">{formatDate(item.tanggal)}</td>
-                    <td className="px-4 py-3 text-sm">{formatTime(item.tanggal)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatDate(item.tanggal)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatTime(item.jamMulai)}
+                    </td>
                     <td className="px-4 py-3 text-sm">{item.ruangan || "-"}</td>
                     <td className="px-4 py-3">
                       <Badge
@@ -215,7 +268,11 @@ function DosenBottomSection({ bottomData }: { bottomData: any }) {
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/detail-jadwal?id=${item.id}`}>
-                        <Button variant="ghost" size="sm" className="text-blue-600">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600"
+                        >
                           Detail
                         </Button>
                       </Link>
@@ -232,8 +289,8 @@ function DosenBottomSection({ bottomData }: { bottomData: any }) {
 }
 
 // Mahasiswa View - Detail Jadwal Summary
-function MahasiswaBottomSection({ bottomData }: { bottomData: any }) {
-  const examData = bottomData?.data || [];
+function MahasiswaBottomSection({ bottomData }: { bottomData: BottomData }) {
+  const examData = (bottomData?.data || []) as MahasiswaExamItem[];
   const displayData = examData.slice(0, 5); // Show first 5 for summary
 
   return (
@@ -253,7 +310,9 @@ function MahasiswaBottomSection({ bottomData }: { bottomData: any }) {
           <table className="w-full">
             <thead>
               <tr className="border-b bg-blue-50">
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">ID</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                  ID
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
                   Judul Tugas Akhir
                 </th>
@@ -263,30 +322,47 @@ function MahasiswaBottomSection({ bottomData }: { bottomData: any }) {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
                   Tanggal
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Jam</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Aksi</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                  Jam
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody>
               {displayData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     Belum ada jadwal ujian
                   </td>
                 </tr>
               ) : (
-                displayData.map((item: any, index: number) => (
+                displayData.map((item: MahasiswaExamItem, index: number) => (
                   <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">{(index + 1).toString().padStart(2, "0")}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {(index + 1).toString().padStart(2, "0")}
+                    </td>
                     <td className="px-4 py-3 text-sm max-w-md truncate">
                       {item.judulTugasAkhir || "-"}
                     </td>
                     <td className="px-4 py-3 text-sm">Seminar Hasil</td>
-                    <td className="px-4 py-3 text-sm">{formatDate(item.tanggal)}</td>
-                    <td className="px-4 py-3 text-sm">{formatTime(item.tanggal) || "09:00"}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatDate(item.tanggal)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatTime(item.jamMulai) || "09:00"}
+                    </td>
                     <td className="px-4 py-3">
                       <Link href={`/detail-jadwal?id=${item.id}`}>
-                        <Button variant="ghost" size="sm" className="text-blue-600">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600"
+                        >
                           Detail
                         </Button>
                       </Link>

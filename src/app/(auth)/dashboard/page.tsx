@@ -15,7 +15,6 @@ export default async function DashboardPage() {
   }
 
   const userRole = String(session.user.role || "").toUpperCase();
-  const userName = session.user.name || "User";
 
   // Fetch pengajuan data for admin (directly from prisma)
   let pengajuanData = null;
@@ -78,12 +77,13 @@ export default async function DashboardPage() {
     : { data: [], error: bottomResult.error };
 
   // **LIMIT NOTIFIKASI 4 ITEM**
-  const notifications = notifResult?.success && Array.isArray(notifResult.data)
-    ? {
-        ...notifResult,
-        data: notifResult.data.slice(0, 7), // LIMIT hanya 4 notifikasi
-      }
-    : { data: [] };
+  const notifications =
+    notifResult?.success && Array.isArray(notifResult.data)
+      ? {
+          ...notifResult,
+          data: notifResult.data.slice(0, 7), // LIMIT hanya 4 notifikasi
+        }
+      : { data: [] };
 
   return (
     <DashboardClient
@@ -92,7 +92,6 @@ export default async function DashboardPage() {
       bottomData={bottomData}
       notifications={notifications}
       pengajuanData={pengajuanData}
-      userName={userName}
     />
   );
 }

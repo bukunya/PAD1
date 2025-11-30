@@ -55,12 +55,19 @@ export default async function RiwayatUjianPage({ searchParams }: PageProps) {
   }
 
   // Type guard to ensure we have DosenRU data
-  const isDosenData = (item: any): item is DosenRU => {
-    return "isDosenPembimbing" in item && "completed" in item;
+  const isDosenData = (item: unknown): item is DosenRU => {
+    return (
+      typeof item === "object" &&
+      item !== null &&
+      "isDosenPembimbing" in item &&
+      "completed" in item
+    );
   };
 
   // Filter only completed exams and ensure correct type
-  const completedData = result.data.filter(isDosenData).filter((item) => item.completed);
+  const completedData = result.data
+    .filter(isDosenData)
+    .filter((item) => item.completed);
 
   return (
     <div className="space-y-6 p-6">

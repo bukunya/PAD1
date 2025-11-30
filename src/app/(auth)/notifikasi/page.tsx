@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Bell, Loader2 } from "lucide-react";
+import { AlertCircle, Bell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Notification {

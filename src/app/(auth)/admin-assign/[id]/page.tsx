@@ -17,6 +17,7 @@ import {
   assignUjian,
   getAvailableDosen,
   getAllDosen,
+  getAvailableRuangan,
 } from "@/lib/actions/adminAssignUjian/adminJadwalin";
 import { AlertCircle, CheckCircle, Loader2, Save } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -45,7 +46,11 @@ interface UjianData {
   tanggalUjian: Date | null;
   jamMulai: Date | null;
   jamSelesai: Date | null;
-  ruangan: string | null;
+  ruangan: {
+    id: string;
+    nama: string;
+    deskripsi: string | null;
+  } | null;
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -66,7 +71,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     tanggalUjian: "",
     jamMulai: "",
     jamSelesai: "",
-    ruangan: "",
+    ruanganId: "",
     dosenPenguji1: "",
     dosenPenguji2: "",
   });
@@ -76,6 +81,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   >([]);
   const [availableDosen, setAvailableDosen] = useState<
     Array<{ id: string; name: string | null }>
+  >([]);
+  const [availableRuangan, setAvailableRuangan] = useState<
+    Array<{ id: string; nama: string; deskripsi: string | null }>
   >([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [shouldCheckAvailability, setShouldCheckAvailability] = useState(false);
@@ -129,28 +137,43 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             const jamMulai = new Date(ujianResult.data.jamMulai);
             setFormData((prev) => ({
               ...prev,
-              jamMulai: jamMulai.toTimeString().slice(0, 5),
+              jamMulai: `${((jamMulai.getUTCHours() + 7) % 24)
+                .toString()
+                .padStart(2, "0")}:${jamMulai
+                .getUTCMinutes()
+                .toString()
+                .padStart(2, "0")}`,
             }));
           }
           if (ujianResult.data.jamSelesai) {
             const jamSelesai = new Date(ujianResult.data.jamSelesai);
             setFormData((prev) => ({
               ...prev,
-              jamSelesai: jamSelesai.toTimeString().slice(0, 5),
+              jamSelesai: `${((jamSelesai.getUTCHours() + 7) % 24)
+                .toString()
+                .padStart(2, "0")}:${jamSelesai
+                .getUTCMinutes()
+                .toString()
+                .padStart(2, "0")}`,
             }));
           } else if (ujianResult.data.jamMulai) {
             // Auto-fill jam selesai to 2 hours after jam mulai if not set
             const jamMulai = new Date(ujianResult.data.jamMulai);
-            jamMulai.setHours(jamMulai.getHours() + 2);
+            jamMulai.setUTCHours(jamMulai.getUTCHours() + 2);
             setFormData((prev) => ({
               ...prev,
-              jamSelesai: jamMulai.toTimeString().slice(0, 5),
+              jamSelesai: `${((jamMulai.getUTCHours() + 7) % 24)
+                .toString()
+                .padStart(2, "0")}:${jamMulai
+                .getUTCMinutes()
+                .toString()
+                .padStart(2, "0")}`,
             }));
           }
           if (ujianResult.data.ruangan) {
             setFormData((prev) => ({
               ...prev,
-              ruangan: ujianResult.data.ruangan || "",
+              ruanganId: ujianResult.data.ruangan?.id || "",
             }));
           }
           if (ujianResult.data.dosenPenguji.length > 0) {
@@ -201,24 +224,33 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         !formData.jamSelesai
       ) {
         setAvailableDosen(dosenList);
+        setAvailableRuangan([]);
         return;
       }
 
       setIsCheckingAvailability(true);
       try {
-        const result = await getAvailableDosen(
-          formData.tanggalUjian,
-          formData.jamMulai,
-          formData.jamSelesai,
-          resolvedParams.id
-        );
+        const [dosenResult, ruanganResult] = await Promise.all([
+          getAvailableDosen(
+            formData.tanggalUjian,
+            formData.jamMulai,
+            formData.jamSelesai,
+            resolvedParams.id
+          ),
+          getAvailableRuangan(
+            formData.tanggalUjian,
+            formData.jamMulai,
+            formData.jamSelesai,
+            resolvedParams.id
+          ),
+        ]);
 
-        if (result.success && result.data) {
-          setAvailableDosen(result.data.available);
+        if (dosenResult.success && dosenResult.data) {
+          setAvailableDosen(dosenResult.data.available);
 
           // Clear selected dosen if they become unavailable
           if (formData.dosenPenguji1) {
-            const isPenguji1Available = result.data.available.some(
+            const isPenguji1Available = dosenResult.data.available.some(
               (d) => d.id === formData.dosenPenguji1
             );
             if (!isPenguji1Available) {
@@ -231,7 +263,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           }
 
           if (formData.dosenPenguji2) {
-            const isPenguji2Available = result.data.available.some(
+            const isPenguji2Available = dosenResult.data.available.some(
               (d) => d.id === formData.dosenPenguji2
             );
             if (!isPenguji2Available) {
@@ -242,10 +274,33 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               });
             }
           }
-        } else if (result.error) {
+        } else if (dosenResult.error) {
           setMessage({
             type: "error",
-            text: result.error,
+            text: dosenResult.error,
+          });
+        }
+
+        if (ruanganResult.success && ruanganResult.data) {
+          setAvailableRuangan(ruanganResult.data.available);
+
+          // Clear selected ruangan if it becomes unavailable
+          if (formData.ruanganId) {
+            const isRuanganAvailable = ruanganResult.data.available.some(
+              (r) => r.id === formData.ruanganId
+            );
+            if (!isRuanganAvailable) {
+              setFormData((prev) => ({ ...prev, ruanganId: "" }));
+              setMessage({
+                type: "error",
+                text: "Ruangan yang dipilih tidak tersedia pada waktu ini",
+              });
+            }
+          }
+        } else if (ruanganResult.error) {
+          setMessage({
+            type: "error",
+            text: ruanganResult.error,
           });
         }
       } catch (error) {
@@ -263,6 +318,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     formData.tanggalUjian,
     formData.jamMulai,
     formData.jamSelesai,
+    formData.dosenPenguji1,
+    formData.dosenPenguji2,
+    formData.ruanganId,
     dosenList,
     resolvedParams.id,
     shouldCheckAvailability,
@@ -276,8 +334,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       if (field === "jamMulai" && value && !prev.jamSelesai) {
         const [hours, minutes] = value.split(":").map(Number);
         const endTime = new Date();
-        endTime.setHours(hours + 2, minutes);
-        newData.jamSelesai = endTime.toTimeString().slice(0, 5);
+        endTime.setUTCHours(hours + 2, minutes);
+        newData.jamSelesai = `${(endTime.getUTCHours() % 24)
+          .toString()
+          .padStart(2, "0")}:${endTime
+          .getUTCMinutes()
+          .toString()
+          .padStart(2, "0")}`;
       }
 
       return newData;
@@ -301,7 +364,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       formDataToSend.append("tanggalUjian", formData.tanggalUjian);
       formDataToSend.append("jamMulai", formData.jamMulai);
       formDataToSend.append("jamSelesai", formData.jamSelesai);
-      formDataToSend.append("ruangan", formData.ruangan);
+      formDataToSend.append("ruanganId", formData.ruanganId);
       formDataToSend.append("dosenPenguji1", formData.dosenPenguji1);
       formDataToSend.append("dosenPenguji2", formData.dosenPenguji2);
 
@@ -520,20 +583,43 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Ruangan */}
             <div className="space-y-2">
-              <Label htmlFor="ruangan">Ruangan *</Label>
-              <Input
-                id="ruangan"
-                name="ruangan"
-                type="text"
-                value={formData.ruangan}
-                onChange={(e) => handleInputChange("ruangan", e.target.value)}
-                placeholder="Contoh: Ruang 301"
-                disabled={isSaving}
-                required
-              />
-              {fieldErrors.ruangan && (
+              <Label htmlFor="ruanganId">
+                Ruangan *
+                {isCheckingAvailability && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (Memeriksa ketersediaan...)
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={formData.ruanganId}
+                onValueChange={(value) => handleInputChange("ruanganId", value)}
+                disabled={isSaving || isCheckingAvailability}
+              >
+                <SelectTrigger id="ruanganId">
+                  <SelectValue placeholder="Pilih Ruangan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRuangan.map((ruangan) => (
+                    <SelectItem key={ruangan.id} value={ruangan.id}>
+                      {ruangan.nama}
+                      {ruangan.deskripsi && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          - {ruangan.deskripsi}
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                  {availableRuangan.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Tidak ada ruangan tersedia pada waktu ini
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              {fieldErrors.ruanganId && (
                 <p className="text-sm text-destructive">
-                  {fieldErrors.ruangan[0]}
+                  {fieldErrors.ruanganId[0]}
                 </p>
               )}
             </div>

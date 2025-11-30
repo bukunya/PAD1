@@ -39,7 +39,7 @@ export async function updateProfile(formData: FormData) {
     }
 
     // ✅ Only include dosenPembimbingId if it exists in formData
-    const rawData: any = {
+    const rawData: Record<string, string> = {
       name: formData.get("name") as string,
       nim: formData.get("nim") as string,
       prodi: formData.get("prodi") as string,

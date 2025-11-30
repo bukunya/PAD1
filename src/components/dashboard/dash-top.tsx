@@ -2,11 +2,28 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Calendar, CheckCircle, Clock, GraduationCap, MapPin } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  CheckCircle,
+  Clock,
+  GraduationCap,
+  MapPin,
+} from "lucide-react";
+
+interface TopData {
+  jumlahMahasiswa?: number;
+  jumlahDosen?: number;
+  data?: Array<{ ruangan?: string }>;
+  ujianSelesaiBulanIni?: number;
+  jumlahMahasiswaBimbingan?: number;
+  jadwalDitunda?: number;
+  statusPengajuan?: string;
+}
 
 interface TopSectionProps {
   role: string;
-  topData: any;
+  topData: TopData;
 }
 
 export function TopSection({ role, topData }: TopSectionProps) {
@@ -21,7 +38,7 @@ export function TopSection({ role, topData }: TopSectionProps) {
 }
 
 // Admin Statistics - ALL DATA FROM BACKEND
-function AdminTopSection({ topData }: { topData: any }) {
+function AdminTopSection({ topData }: { topData: TopData }) {
   const stats = [
     {
       label: "Mahasiswa Aktif",
@@ -78,7 +95,7 @@ function AdminTopSection({ topData }: { topData: any }) {
 }
 
 // Dosen Statistics - ALL DATA FROM BACKEND
-function DosenTopSection({ topData }: { topData: any }) {
+function DosenTopSection({ topData }: { topData: TopData }) {
   const stats = [
     {
       label: "Ujian Mendatang",
@@ -135,13 +152,19 @@ function DosenTopSection({ topData }: { topData: any }) {
 }
 
 // Mahasiswa Statistics - Different Layout (2 cards side by side)
-function MahasiswaTopSection({ topData }: { topData: any }) {
+function MahasiswaTopSection({ topData }: { topData: TopData }) {
   const statusPengajuan = topData?.statusPengajuan || "BELUM_MENGAJUKAN";
   const upcomingExam = topData?.data?.[0];
 
   const statusConfig: Record<
     string,
-    { label: string; displayLabel: string; bgColor: string; textColor: string; iconBg: string }
+    {
+      label: string;
+      displayLabel: string;
+      bgColor: string;
+      textColor: string;
+      iconBg: string;
+    }
   > = {
     MENUNGGU_VERIFIKASI: {
       label: "Menunggu Verifikasi",
@@ -187,7 +210,8 @@ function MahasiswaTopSection({ topData }: { topData: any }) {
     },
   };
 
-  const currentStatus = statusConfig[statusPengajuan] || statusConfig.BELUM_MENGAJUKAN;
+  const currentStatus =
+    statusConfig[statusPengajuan] || statusConfig.BELUM_MENGAJUKAN;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -199,7 +223,9 @@ function MahasiswaTopSection({ topData }: { topData: any }) {
               <Calendar className={`h-6 w-6 ${currentStatus.textColor}`} />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-500 mb-2">Status Pengajuan Ujian</p>
+              <p className="text-sm text-gray-500 mb-2">
+                Status Pengajuan Ujian
+              </p>
               <p className={`text-xl font-bold ${currentStatus.textColor}`}>
                 {currentStatus.displayLabel}
               </p>

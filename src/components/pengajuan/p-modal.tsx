@@ -26,6 +26,17 @@ import {
 } from "@/lib/actions/adminAssignUjian/adminTerimaTolakUjian";
 import { useRouter } from "next/navigation";
 
+interface PengajuanData {
+  mahasiswa: {
+    name: string | null;
+    nim: string | null;
+    prodi?: string | null;
+  };
+  judul: string;
+  berkasUrl?: string;
+  status: string;
+}
+
 interface PengajuanModalVerifyProps {
   pengajuanId: string;
   onClose: () => void;
@@ -38,7 +49,7 @@ export function PengajuanModalVerify({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<PengajuanData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -60,7 +71,7 @@ export function PengajuanModalVerify({
         } else {
           setError(result.error || "Gagal memuat data");
         }
-      } catch (err) {
+      } catch {
         setError("Terjadi kesalahan saat memuat data");
       } finally {
         setIsLoading(false);
@@ -93,7 +104,7 @@ export function PengajuanModalVerify({
           text: result.error || "Gagal menerima pengajuan",
         });
       }
-    } catch (error) {
+    } catch {
       setMessage({
         type: "error",
         text: "Terjadi kesalahan saat menerima pengajuan",
@@ -126,7 +137,7 @@ export function PengajuanModalVerify({
           text: result.error || "Gagal menolak pengajuan",
         });
       }
-    } catch (error) {
+    } catch {
       setMessage({
         type: "error",
         text: "Terjadi kesalahan saat menolak pengajuan",
@@ -176,16 +187,16 @@ export function PengajuanModalVerify({
               <h3 className="font-semibold text-sm text-muted-foreground">
                 Nama Mahasiswa
               </h3>
-              <p className="text-lg font-bold">{data.mahasiswa.name}</p>
+              <p className="text-lg font-bold">{data?.mahasiswa.name}</p>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">NIM/ ID Mahasiswa</p>
-                  <p className="font-medium">{data.mahasiswa.nim}</p>
+                  <p className="font-medium">{data?.mahasiswa.nim}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Jurusan</p>
                   <p className="font-medium">
-                    {data.mahasiswa.prodi || "Teknik Informatika"}
+                    {data?.mahasiswa.prodi || "Teknik Informatika"}
                   </p>
                 </div>
               </div>
@@ -193,8 +204,10 @@ export function PengajuanModalVerify({
 
             {/* Judul TA */}
             <div>
-              <Label className="text-muted-foreground text-sm">Judul Tugas Akhir</Label>
-              <p className="mt-2 text-base font-medium">{data.judul}</p>
+              <Label className="text-muted-foreground text-sm">
+                Judul Tugas Akhir
+              </Label>
+              <p className="mt-2 text-base font-medium">{data?.judul}</p>
             </div>
 
             {/* Berkas */}
@@ -207,13 +220,15 @@ export function PengajuanModalVerify({
                   </div>
                   <div>
                     <p className="font-medium text-sm">
-                        {data.berkasUrl ? data.berkasUrl.split("/").pop() : "Tidak ada berkas"}
+                      {data?.berkasUrl
+                        ? data.berkasUrl.split("/").pop()
+                        : "Tidak ada berkas"}
                     </p>
-                    </div>
+                  </div>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
                   <a
-                    href={data.berkasUrl}
+                    href={data?.berkasUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -226,7 +241,9 @@ export function PengajuanModalVerify({
             {/* Reject Form (Conditional) */}
             {showRejectForm && (
               <div>
-                <Label htmlFor="komentar">Komentar / Alasan Penolakan (Opsional)</Label>
+                <Label htmlFor="komentar">
+                  Komentar / Alasan Penolakan (Opsional)
+                </Label>
                 <textarea
                   id="komentar"
                   value={komentarAdmin}
@@ -247,7 +264,7 @@ export function PengajuanModalVerify({
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                     onClick={handleAccept}
                     disabled={
-                      isProcessing || data.status !== "MENUNGGU_VERIFIKASI"
+                      isProcessing || data?.status !== "MENUNGGU_VERIFIKASI"
                     }
                   >
                     {isProcessing ? (
@@ -267,7 +284,7 @@ export function PengajuanModalVerify({
                     className="flex-1"
                     onClick={() => setShowRejectForm(true)}
                     disabled={
-                      isProcessing || data.status !== "MENUNGGU_VERIFIKASI"
+                      isProcessing || data?.status !== "MENUNGGU_VERIFIKASI"
                     }
                   >
                     <XCircle className="mr-2 h-4 w-4" />

@@ -67,7 +67,11 @@ export async function dashBottom() {
                 },
               },
               tanggalUjian: true,
-              ruangan: true,
+              ruangan: {
+                select: {
+                  nama: true,
+                },
+              },
               dosenPenguji: {
                 select: {
                   dosen: {
@@ -94,7 +98,7 @@ export async function dashBottom() {
             nim: item.mahasiswa?.nim || null,
             foto: item.mahasiswa?.image || null,
             tanggal: item.tanggalUjian,
-            ruangan: item.ruangan || null,
+            ruangan: item.ruangan?.nama || null,
             dosenPenguji1: item.dosenPenguji?.[0]?.dosen?.name || null,
             dosenPenguji2: item.dosenPenguji?.[1]?.dosen?.name || null,
             dosenPembimbing: item.dosenPembimbing?.name || null,
@@ -121,7 +125,11 @@ export async function dashBottom() {
               },
               judul: true,
               tanggalUjian: true,
-              ruangan: true,
+              ruangan: {
+                select: {
+                  nama: true,
+                },
+              },
               dosenPembimbingId: true,
             },
             orderBy: {
@@ -136,7 +144,7 @@ export async function dashBottom() {
             foto: item.mahasiswa?.image || null,
             judulTugasAkhir: item.judul || null,
             tanggal: item.tanggalUjian,
-            ruangan: item.ruangan || null,
+            ruangan: item.ruangan?.nama || null,
             isDosenPembimbing: item.dosenPembimbingId === userId,
           }));
         }

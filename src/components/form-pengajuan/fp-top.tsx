@@ -32,7 +32,8 @@ const formatProdi = (prodi: string | null): string => {
     TeknologiRekayasaPerangkatLunak: "Teknologi Rekayasa Perangkat Lunak",
     TeknologiRekayasaElektro: "Teknologi Rekayasa Elektro",
     TeknologiRekayasaInternet: "Teknologi Rekayasa Internet",
-    TeknologiRekayasaInstrumentasiDanKontrol: "Teknologi Rekayasa Instrumentasi Dan Kontrol",
+    TeknologiRekayasaInstrumentasiDanKontrol:
+      "Teknologi Rekayasa Instrumentasi Dan Kontrol",
   };
   return prodiMap[prodi] || prodi;
 };
@@ -42,11 +43,11 @@ const getSemester = (nim: string | null): string => {
   const angkatan = parseInt(nim.slice(0, 2));
   const currentYear = new Date().getFullYear() % 100; // Get last 2 digits
   const currentMonth = new Date().getMonth() + 1; // 1-12
-  
-  let yearDiff = currentYear - angkatan;
+
+  const yearDiff = currentYear - angkatan;
   // Jika bulan >= 8 (Agustus), berarti semester ganjil tahun ajaran baru
-  const semester = currentMonth >= 8 ? (yearDiff * 2) + 1 : yearDiff * 2;
-  
+  const semester = currentMonth >= 8 ? yearDiff * 2 + 1 : yearDiff * 2;
+
   return `${semester} (${semester % 2 === 1 ? "Ganjil" : "Genap"})`;
 };
 
@@ -77,7 +78,7 @@ const FpTop = () => {
 
       try {
         const result = await DataProfile();
-        
+
         if (result.success && result.data) {
           setUserData(result.data);
         } else {
@@ -137,7 +138,10 @@ const FpTop = () => {
   // If no userData (data tidak lengkap), only show dialog
   if (!userData) {
     return (
-      <AlertDialog open={showIncompleteDialog} onOpenChange={setShowIncompleteDialog}>
+      <AlertDialog
+        open={showIncompleteDialog}
+        onOpenChange={setShowIncompleteDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-2">
@@ -147,12 +151,16 @@ const FpTop = () => {
               <AlertDialogTitle>Data Profil Belum Lengkap</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="pt-2">
-              Anda perlu melengkapi data profil terlebih dahulu sebelum dapat mengajukan ujian tugas akhir. 
-              Silakan lengkapi data seperti nama, NIM, prodi, dan informasi lainnya.
+              Anda perlu melengkapi data profil terlebih dahulu sebelum dapat
+              mengajukan ujian tugas akhir. Silakan lengkapi data seperti nama,
+              NIM, prodi, dan informasi lainnya.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleGoToProfile} className="w-full sm:w-auto">
+            <AlertDialogAction
+              onClick={handleGoToProfile}
+              className="w-full sm:w-auto"
+            >
               Lengkapi Data Profil
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -171,7 +179,10 @@ const FpTop = () => {
           {/* Row 1: Nama, NIM, Angkatan */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nama" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="nama"
+                className="text-sm font-medium text-gray-600"
+              >
                 Nama
               </Label>
               <Input
@@ -182,7 +193,10 @@ const FpTop = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nim" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="nim"
+                className="text-sm font-medium text-gray-600"
+              >
                 NIM / ID Mahasiswa
               </Label>
               <Input
@@ -193,7 +207,10 @@ const FpTop = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="angkatan" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="angkatan"
+                className="text-sm font-medium text-gray-600"
+              >
                 Angkatan
               </Label>
               <Input
@@ -208,7 +225,10 @@ const FpTop = () => {
           {/* Row 2: Jurusan, Prodi, Semester */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="jurusan" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="jurusan"
+                className="text-sm font-medium text-gray-600"
+              >
                 Jurusan
               </Label>
               <Input
@@ -219,7 +239,10 @@ const FpTop = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prodi" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="prodi"
+                className="text-sm font-medium text-gray-600"
+              >
                 Program Studi
               </Label>
               <Input
@@ -230,7 +253,10 @@ const FpTop = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="semester" className="text-sm font-medium text-gray-600">
+              <Label
+                htmlFor="semester"
+                className="text-sm font-medium text-gray-600"
+              >
                 Semester
               </Label>
               <Input
@@ -252,7 +278,9 @@ const FpTop = () => {
                 {userData.dosenPembimbing ? (
                   <>
                     Dosen Pembimbing:{" "}
-                    <span className="font-medium">{userData.dosenPembimbing}</span>
+                    <span className="font-medium">
+                      {userData.dosenPembimbing}
+                    </span>
                   </>
                 ) : (
                   <span className="text-gray-400 italic">

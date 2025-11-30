@@ -9,14 +9,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { PengajuanModalVerify } from "@/components/pengajuan/p-modal";
 
+interface Mahasiswa {
+  name?: string;
+  nim?: string;
+  image?: string;
+}
+
+interface PengajuanItem {
+  id: string;
+  mahasiswa?: Mahasiswa;
+  judul?: string;
+  createdAt: Date;
+  status: string;
+}
+
+interface PengajuanData {
+  data?: PengajuanItem[];
+}
+
 interface PengajuanSectionProps {
-  pengajuanData: any;
+  pengajuanData: PengajuanData;
 }
 
 export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
-  const [selectedPengajuanId, setSelectedPengajuanId] = useState<string | null>(null);
+  const [selectedPengajuanId, setSelectedPengajuanId] = useState<string | null>(
+    null
+  );
   const pengajuanList = pengajuanData?.data || [];
-  
+
   // Display all pengajuan with scroll
   const displayData = pengajuanList;
 
@@ -69,7 +89,9 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
       <Card className="border-none shadow-sm h-full flex flex-col overflow-hidden">
         <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Pengajuan Terbaru</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              Pengajuan Terbaru
+            </CardTitle>
             <Link href="/pengajuan">
               <Button variant="link" className="text-blue-600">
                 Lihat Semua
@@ -102,12 +124,15 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
               <tbody>
                 {displayData.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500"
+                    >
                       Tidak ada pengajuan
                     </td>
                   </tr>
                 ) : (
-                  displayData.map((item: any, index: number) => (
+                  displayData.map((item: PengajuanItem) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -137,7 +162,9 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
                       <td className="px-4 py-3 text-sm">
                         {formatDate(item.createdAt)}
                       </td>
-                      <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(item.status)}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <Button
                           variant="ghost"

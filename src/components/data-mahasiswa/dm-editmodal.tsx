@@ -121,7 +121,10 @@ export function EditMahasiswaModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={mahasiswa.image || ""} alt={mahasiswa.name || ""} />
+              <AvatarImage
+                src={mahasiswa.image || ""}
+                alt={mahasiswa.name || ""}
+              />
               <AvatarFallback className="bg-blue-100 text-lg font-semibold text-blue-600">
                 {mahasiswa.name?.charAt(0).toUpperCase() || "M"}
               </AvatarFallback>
@@ -231,7 +234,7 @@ export function EditMahasiswaModal({
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                Ubah ke "Dosen" jika user ini seharusnya dosen
+                Ubah ke &quot;Dosen&quot; jika user ini seharusnya dosen
               </p>
             </div>
 

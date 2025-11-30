@@ -20,7 +20,9 @@ interface UjianDetail {
   tanggalUjian: Date | null;
   jamMulai: Date | null;
   jamSelesai: Date | null;
-  ruangan: string | null;
+  ruangan: {
+    nama: string;
+  } | null;
   mahasiswa: {
     name: string | null;
     nim: string | null;
@@ -72,7 +74,10 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
 
   const formatTime = (start: Date | null, end: Date | null) => {
     if (!start || !end) return "-";
-    return `${format(new Date(start), "HH:mm")} - ${format(new Date(end), "HH:mm")} WIB`;
+    return `${format(new Date(start), "HH:mm")} - ${format(
+      new Date(end),
+      "HH:mm"
+    )} WIB`;
   };
 
   const formatProdi = (prodi: string | null) => {
@@ -143,15 +148,21 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
           {/* Mahasiswa Section - Only for DOSEN */}
           {userRole === "DOSEN" && (
             <div className="rounded-lg bg-blue-50 p-4">
-              <h3 className="mb-3 font-semibold text-gray-900">Data Mahasiswa</h3>
+              <h3 className="mb-3 font-semibold text-gray-900">
+                Data Mahasiswa
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Nama Mahasiswa</p>
-                  <p className="font-medium text-gray-900">{data.mahasiswa.name || "-"}</p>
+                  <p className="font-medium text-gray-900">
+                    {data.mahasiswa.name || "-"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">NIM</p>
-                  <p className="font-medium text-gray-900">{data.mahasiswa.nim || "-"}</p>
+                  <p className="font-medium text-gray-900">
+                    {data.mahasiswa.nim || "-"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -160,7 +171,9 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
           {/* Judul TA */}
           <div>
             <p className="text-sm text-gray-600">Judul Tugas Akhir</p>
-            <p className="mt-1 font-medium text-gray-900">{data.judul || "-"}</p>
+            <p className="mt-1 font-medium text-gray-900">
+              {data.judul || "-"}
+            </p>
           </div>
 
           {/* Jenis Ujian */}
@@ -181,7 +194,9 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-600">Tanggal Ujian</p>
-              <p className="mt-1 font-medium text-gray-900">{formatDate(data.tanggalUjian)}</p>
+              <p className="mt-1 font-medium text-gray-900">
+                {formatDate(data.tanggalUjian)}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Waktu Ujian</p>
@@ -194,13 +209,15 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
           {/* Ruangan */}
           <div>
             <p className="text-sm text-gray-600">Ruang Ujian</p>
-            <p className="mt-1 font-medium text-gray-900">{data.ruangan || "-"}</p>
+            <p className="mt-1 font-medium text-gray-900">
+              {data.ruangan?.nama || "-"}
+            </p>
           </div>
 
           {/* Dosen Section */}
           <div className="rounded-lg bg-gray-50 p-4">
             <h3 className="mb-3 font-semibold text-gray-900">Tim Penguji</h3>
-            
+
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600">Dosen Pembimbing 1</p>
@@ -233,7 +250,9 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
                     <FileText className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">Dokumen Tugas Akhir</p>
+                    <p className="font-medium text-gray-900">
+                      Dokumen Tugas Akhir
+                    </p>
                     <p className="text-sm text-gray-600">File PDF tersedia</p>
                   </div>
                 </div>
@@ -251,9 +270,12 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
           {/* Catatan - Only for MAHASISWA */}
           {userRole === "MAHASISWA" && (
             <div className="rounded-lg bg-yellow-50 p-4">
-              <p className="text-sm font-semibold text-gray-900 mb-2">Catatan dari Admin</p>
+              <p className="text-sm font-semibold text-gray-900 mb-2">
+                Catatan dari Admin
+              </p>
               <p className="text-sm text-gray-700">
-                Silakan hadir 15 menit sebelum ujian dimulai dan membawa dokumen cetak.
+                Silakan hadir 15 menit sebelum ujian dimulai dan membawa dokumen
+                cetak.
               </p>
             </div>
           )}

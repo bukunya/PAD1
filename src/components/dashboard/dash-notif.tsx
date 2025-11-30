@@ -5,12 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Bell, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-interface StatusNotificationProps {
-  notifications: any;
-  role: string;
+interface NotificationItem {
+  message: string;
+  createdAt: Date;
 }
 
-export function StatusNotification({ notifications, role }: StatusNotificationProps) {
+interface NotificationData {
+  data?: NotificationItem[];
+}
+
+interface StatusNotificationProps {
+  notifications: NotificationData;
+}
+
+export function StatusNotification({ notifications }: StatusNotificationProps) {
   const notifData = notifications?.data || [];
   const hasNotifications = notifData.length > 0;
 
@@ -29,7 +37,11 @@ export function StatusNotification({ notifications, role }: StatusNotificationPr
           <CardTitle className="text-lg font-semibold">Notifikasi</CardTitle>
           {hasNotifications && (
             <Link href="/riwayat-pengajuan">
-              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-blue-600 hover:text-blue-700"
+              >
                 View All
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -46,15 +58,20 @@ export function StatusNotification({ notifications, role }: StatusNotificationPr
               <p className="text-sm text-gray-500">Tidak ada notifikasi</p>
             </div>
           ) : (
-            notifData.map((notif: any, index: number) => (
-              <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            notifData.map((notif: NotificationItem, index: number) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <div className="mt-1">
                   <div className="p-2 rounded-full bg-blue-50">
                     <Bell className="h-4 w-4 text-blue-600" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 line-clamp-2">{notif.message}</p>
+                  <p className="text-sm text-gray-800 line-clamp-2">
+                    {notif.message}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {formatDateTime(notif.createdAt)}
                   </p>

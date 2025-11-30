@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { format } from "date-fns";
+import { format, addHours } from "date-fns";
 import { id } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { AdminDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
@@ -14,12 +14,12 @@ interface DJAdminTableProps {
   onPageChange: (page: number) => void;
 }
 
-export default function DJAdminTable({ 
-  data, 
-  loading, 
-  currentPage, 
-  totalPages, 
-  onPageChange 
+export default function DJAdminTable({
+  data,
+  loading,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: DJAdminTableProps) {
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
@@ -28,7 +28,10 @@ export default function DJAdminTable({
 
   const formatTime = (start: Date | null, end: Date | null) => {
     if (!start || !end) return "-";
-    return `${format(new Date(start), "HH:mm")} - ${format(new Date(end), "HH:mm")}`;
+    return `${format(addHours(new Date(start), 7), "HH:mm")} - ${format(
+      addHours(new Date(end), 7),
+      "HH:mm"
+    )}`;
   };
 
   const formatProdi = (prodi: string | null) => {
@@ -72,7 +75,10 @@ export default function DJAdminTable({
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-lg border p-4"
+            >
               <div className="h-12 w-12 rounded-full bg-gray-200" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-1/3 rounded bg-gray-200" />
@@ -109,7 +115,7 @@ export default function DJAdminTable({
 
       {/* Table Rows */}
       <div className="space-y-2">
-        {data.map(item => (
+        {data.map((item) => (
           <div
             key={item.id}
             className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
@@ -132,8 +138,12 @@ export default function DJAdminTable({
                   )}
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium text-gray-900">{item.namaMahasiswa || "-"}</span>
-                  <span className="text-sm text-gray-500">{item.nim || "-"}</span>
+                  <span className="font-medium text-gray-900">
+                    {item.namaMahasiswa || "-"}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {item.nim || "-"}
+                  </span>
                 </div>
               </div>
 
@@ -173,7 +183,9 @@ export default function DJAdminTable({
 
               {/* Tanggal & Jam */}
               <div className="col-span-2 flex flex-col justify-center">
-                <span className="text-sm text-gray-900">{formatDate(item.tanggal)}</span>
+                <span className="text-sm text-gray-900">
+                  {formatDate(item.tanggal)}
+                </span>
                 <span className="text-xs text-gray-600">
                   {formatTime(item.jamMulai, item.jamSelesai)}
                 </span>
@@ -181,7 +193,9 @@ export default function DJAdminTable({
 
               {/* Ruangan & Prodi */}
               <div className="col-span-2 flex flex-col justify-center">
-                <span className="text-sm text-gray-900">{item.ruangan || "-"}</span>
+                <span className="text-sm text-gray-900">
+                  {item.ruangan || "-"}
+                </span>
                 <span className="text-xs text-gray-600">
                   {formatProdi(item.prodi)} - {item.angkatan || "-"}
                 </span>

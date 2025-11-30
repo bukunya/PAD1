@@ -5,8 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 
+interface ExamItem {
+  id: string;
+  namaMahasiswa?: string | null;
+  jamMulai?: Date | null;
+  jamSelesai?: Date | null;
+  tanggal?: Date | null;
+  ruangan?: string | null;
+}
+
 interface CalendarProps {
-  upcomingExams: any[];
+  upcomingExams: ExamItem[];
   role: string;
 }
 
@@ -14,8 +23,18 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthNames = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
 
   const getMonthYear = () => {
@@ -44,10 +63,14 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
 
   // Group events by date
   const eventsByDate = useMemo(() => {
-    const grouped: Record<string, any[]> = {};
-    
-    upcomingExams.forEach(exam => {
-      const examDate = exam.jamMulai ? new Date(exam.jamMulai) : exam.tanggal ? new Date(exam.tanggal) : null;
+    const grouped: Record<string, ExamItem[]> = {};
+
+    upcomingExams.forEach((exam) => {
+      const examDate = exam.jamMulai
+        ? new Date(exam.jamMulai)
+        : exam.tanggal
+        ? new Date(exam.tanggal)
+        : null;
       if (examDate) {
         const dateKey = examDate.toDateString();
         if (!grouped[dateKey]) {
@@ -56,7 +79,7 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
         grouped[dateKey].push(exam);
       }
     });
-    
+
     return grouped;
   }, [upcomingExams]);
 
@@ -64,9 +87,13 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
     if (!upcomingExams || upcomingExams.length === 0) return false;
 
     return upcomingExams.some((exam) => {
-      const examDate = exam.jamMulai ? new Date(exam.jamMulai) : exam.tanggal ? new Date(exam.tanggal) : null;
+      const examDate = exam.jamMulai
+        ? new Date(exam.jamMulai)
+        : exam.tanggal
+        ? new Date(exam.tanggal)
+        : null;
       if (!examDate) return false;
-      
+
       return (
         examDate.getDate() === day &&
         examDate.getMonth() === currentDate.getMonth() &&
@@ -85,11 +112,15 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
   };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+    );
   };
 
   const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+    );
   };
 
   const formatTime = (date: Date | null | undefined) => {
@@ -116,7 +147,9 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
           <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded">
             <ChevronLeft className="h-5 w-5 text-gray-600" />
           </button>
-          <CardTitle className="text-base font-semibold">{getMonthYear()}</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            {getMonthYear()}
+          </CardTitle>
           <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded">
             <ChevronRight className="h-5 w-5 text-gray-600" />
           </button>
@@ -127,7 +160,10 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
         {/* Days of week */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day) => (
-            <div key={day} className="text-center text-xs font-medium text-gray-500">
+            <div
+              key={day}
+              className="text-center text-xs font-medium text-gray-500"
+            >
               {day}
             </div>
           ))}
@@ -146,10 +182,26 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
                 className={`
                   aspect-square flex items-center justify-center text-sm rounded-lg
                   ${!isCurrentMonth ? "text-gray-300" : "text-gray-700"}
-                  ${isTodayDate ? "bg-blue-100 font-bold border-2 border-blue-500" : ""}
-                  ${hasExam && !isTodayDate ? "bg-purple-50 text-purple-700 font-semibold" : ""}
-                  ${hasExam && isTodayDate ? "bg-purple-100 text-purple-700 font-bold" : ""}
-                  ${isCurrentMonth && !hasExam && !isTodayDate ? "hover:bg-gray-50" : ""}
+                  ${
+                    isTodayDate
+                      ? "bg-blue-100 font-bold border-2 border-blue-500"
+                      : ""
+                  }
+                  ${
+                    hasExam && !isTodayDate
+                      ? "bg-purple-50 text-purple-700 font-semibold"
+                      : ""
+                  }
+                  ${
+                    hasExam && isTodayDate
+                      ? "bg-purple-100 text-purple-700 font-bold"
+                      : ""
+                  }
+                  ${
+                    isCurrentMonth && !hasExam && !isTodayDate
+                      ? "hover:bg-gray-50"
+                      : ""
+                  }
                 `}
               >
                 {day || ""}
@@ -160,23 +212,31 @@ export function Calendar({ upcomingExams, role }: CalendarProps) {
 
         {/* Agenda Hari Ini */}
         <div className="pt-4 border-t">
-          <CardTitle className="text-base font-semibold mb-3">Agenda Hari Ini</CardTitle>
+          <CardTitle className="text-base font-semibold mb-3">
+            Agenda Hari Ini
+          </CardTitle>
 
           {todayAgenda.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">Tidak ada agenda hari ini</p>
+            <p className="text-sm text-gray-500 text-center py-4">
+              Tidak ada agenda hari ini
+            </p>
           ) : (
             <div className="space-y-3">
               {todayAgenda.map((exam, index) => (
-                <div key={index} className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <div
+                  key={index}
+                  className="p-3 rounded-lg bg-blue-50 border border-blue-200"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-800">
-                        {role === "ADMIN" || role === "DOSEN" 
+                        {role === "ADMIN" || role === "DOSEN"
                           ? exam.namaMahasiswa || "Ujian Tugas Akhir"
                           : "Ujian Tugas Akhir"}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {formatTime(exam.jamMulai)} - {formatTime(exam.jamSelesai)}
+                        {formatTime(exam.jamMulai)} -{" "}
+                        {formatTime(exam.jamSelesai)}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Ruangan {exam.ruangan || "-"}

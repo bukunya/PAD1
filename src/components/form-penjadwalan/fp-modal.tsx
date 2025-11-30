@@ -31,8 +31,20 @@ import {
   assignUjian,
   getAllDosen,
   getAvailableDosen,
+  getAvailableRuangan,
+  getAllRuangan,
 } from "@/lib/actions/adminAssignUjian/adminJadwalin";
 import { useRouter } from "next/navigation";
+
+interface UjianData {
+  mahasiswa: {
+    name: string | null;
+  };
+  dosenPembimbing: {
+    id: string;
+    name: string | null;
+  };
+}
 
 interface PenjadwalanModalProps {
   pengajuanId: string;
@@ -46,7 +58,7 @@ export function PenjadwalanModal({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<UjianData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error" | "warning";
@@ -55,26 +67,30 @@ export function PenjadwalanModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   // Form state
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     tanggalUjian: "",
     jamMulai: "",
     jamSelesai: "",
-    ruangan: "",
+    ruanganId: "",
     dosenPenguji1: "",
     dosenPenguji2: "",
     catatan: "",
-    });
+  });
 
-    const [dosenList, setDosenList] = useState<
+  const [dosenList, setDosenList] = useState<
     Array<{ id: string; name: string | null }>
-    >([]);
+  >([]);
 
-    const [availableDosen, setAvailableDosen] = useState<
+  const [availableDosen, setAvailableDosen] = useState<
     Array<{ id: string; name: string | null }>
-    >([]);
+  >([]);
 
-    const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [availableRuangan, setAvailableRuangan] = useState<
+    Array<{ id: string; nama: string; deskripsi: string | null }>
+  >([]);
 
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [jamSelesaiManuallySet, setJamSelesaiManuallySet] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -82,9 +98,10 @@ export function PenjadwalanModal({
       setError(null);
 
       try {
-        const [ujianResult, dosenResult] = await Promise.all([
+        const [ujianResult, dosenResult, ruanganResult] = await Promise.all([
           getUjianDetails(pengajuanId),
           getAllDosen(),
+          getAllRuangan(),
         ]);
 
         if (ujianResult.success && ujianResult.data) {
@@ -103,7 +120,11 @@ export function PenjadwalanModal({
           setDosenList(allDosen);
           setAvailableDosen(allDosen);
         }
-      } catch (err) {
+
+        if (ruanganResult.success && ruanganResult.data) {
+          setAvailableRuangan(ruanganResult.data);
+        }
+      } catch {
         setError("Terjadi kesalahan saat memuat data");
       } finally {
         setIsLoading(false);
@@ -121,25 +142,35 @@ export function PenjadwalanModal({
         !formData.jamMulai ||
         !formData.jamSelesai
       ) {
+        // When no date/time selected, show all dosen and ruangan
         setAvailableDosen(dosenList);
+        // Don't reset availableRuangan here - keep all rooms visible initially
         return;
       }
 
       setIsCheckingAvailability(true);
       try {
-        const result = await getAvailableDosen(
-          formData.tanggalUjian,
-          formData.jamMulai,
-          formData.jamSelesai,
-          pengajuanId
-        );
+        const [dosenResult, ruanganResult] = await Promise.all([
+          getAvailableDosen(
+            formData.tanggalUjian,
+            formData.jamMulai,
+            formData.jamSelesai,
+            pengajuanId
+          ),
+          getAvailableRuangan(
+            formData.tanggalUjian,
+            formData.jamMulai,
+            formData.jamSelesai,
+            pengajuanId
+          ),
+        ]);
 
-        if (result.success && result.data) {
-          setAvailableDosen(result.data.available);
+        if (dosenResult.success && dosenResult.data) {
+          setAvailableDosen(dosenResult.data.available);
 
           // Clear selected dosen if they become unavailable
           if (formData.dosenPenguji1) {
-            const isPenguji1Available = result.data.available.some(
+            const isPenguji1Available = dosenResult.data.available.some(
               (d) => d.id === formData.dosenPenguji1
             );
             if (!isPenguji1Available) {
@@ -148,7 +179,7 @@ export function PenjadwalanModal({
           }
 
           if (formData.dosenPenguji2) {
-            const isPenguji2Available = result.data.available.some(
+            const isPenguji2Available = dosenResult.data.available.some(
               (d) => d.id === formData.dosenPenguji2
             );
             if (!isPenguji2Available) {
@@ -156,8 +187,22 @@ export function PenjadwalanModal({
             }
           }
         }
-      } catch (error) {
-        console.error("Error checking availability:", error);
+
+        if (ruanganResult.success && ruanganResult.data) {
+          setAvailableRuangan(ruanganResult.data.available);
+
+          // Clear selected ruangan if it becomes unavailable
+          if (formData.ruanganId) {
+            const isRuanganAvailable = ruanganResult.data.available.some(
+              (r) => r.id === formData.ruanganId
+            );
+            if (!isRuanganAvailable) {
+              setFormData((prev) => ({ ...prev, ruanganId: "" }));
+            }
+          }
+        }
+      } catch {
+        console.error("Error checking availability");
       } finally {
         setIsCheckingAvailability(false);
       }
@@ -168,6 +213,9 @@ export function PenjadwalanModal({
     formData.tanggalUjian,
     formData.jamMulai,
     formData.jamSelesai,
+    formData.dosenPenguji1,
+    formData.dosenPenguji2,
+    formData.ruanganId,
     dosenList,
     pengajuanId,
   ]);
@@ -177,7 +225,11 @@ export function PenjadwalanModal({
       const newData = { ...prev, [field]: value };
 
       // Auto-fill jam selesai when jam mulai changes (2 hours default)
-      if (field === "jamMulai" && value && !prev.jamSelesai) {
+      if (field === "jamMulai" && value && !jamSelesaiManuallySet) {
+        console.log(
+          "Autofill jamSelesai based on jamMulai fp-modal 181:",
+          value
+        );
         const [hours, minutes] = value.split(":").map(Number);
         const endTime = new Date();
         endTime.setHours(hours + 2, minutes);
@@ -186,6 +238,14 @@ export function PenjadwalanModal({
 
       return newData;
     });
+
+    if (field === "jamSelesai") {
+      setJamSelesaiManuallySet(true);
+    }
+
+    if (field === "jamMulai") {
+      setJamSelesaiManuallySet(false);
+    }
 
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
@@ -205,7 +265,7 @@ export function PenjadwalanModal({
       formDataToSend.append("tanggalUjian", formData.tanggalUjian);
       formDataToSend.append("jamMulai", formData.jamMulai);
       formDataToSend.append("jamSelesai", formData.jamSelesai);
-      formDataToSend.append("ruangan", formData.ruangan);
+      formDataToSend.append("ruanganId", formData.ruanganId);
       formDataToSend.append("dosenPenguji1", formData.dosenPenguji1);
       formDataToSend.append("dosenPenguji2", formData.dosenPenguji2);
 
@@ -231,7 +291,7 @@ export function PenjadwalanModal({
           });
         }
       }
-    } catch (error) {
+    } catch {
       setMessage({
         type: "error",
         text: "Terjadi kesalahan saat menjadwalkan ujian",
@@ -284,7 +344,7 @@ export function PenjadwalanModal({
             )}
 
             {/* Grid Layout for Form */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {/* Tanggal */}
               <div className="space-y-2">
                 <Label htmlFor="tanggalUjian" className="text-muted-foreground">
@@ -312,10 +372,10 @@ export function PenjadwalanModal({
                 )}
               </div>
 
-              {/* Jam Ujian */}
+              {/* Jam Mulai */}
               <div className="space-y-2">
                 <Label htmlFor="jamMulai" className="text-muted-foreground">
-                  Jam Ujian
+                  Jam Mulai
                 </Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -338,34 +398,78 @@ export function PenjadwalanModal({
                 )}
               </div>
 
+              {/* Jam Selesai */}
+              <div className="space-y-2">
+                <Label htmlFor="jamSelesai" className="text-muted-foreground">
+                  Jam Selesai
+                </Label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="jamSelesai"
+                    type="time"
+                    value={formData.jamSelesai}
+                    onChange={(e) =>
+                      handleInputChange("jamSelesai", e.target.value)
+                    }
+                    disabled={isSaving}
+                    required
+                    className="pl-10"
+                  />
+                </div>
+                {fieldErrors.jamSelesai && (
+                  <p className="text-sm text-destructive">
+                    {fieldErrors.jamSelesai[0]}
+                  </p>
+                )}
+              </div>
+
               {/* Ruangan */}
               <div className="space-y-2">
-                <Label htmlFor="ruangan" className="text-muted-foreground">
+                <Label htmlFor="ruanganId" className="text-muted-foreground">
                   Ruangan
+                  {isCheckingAvailability && (
+                    <span className="ml-2 text-xs">(Memeriksa...)</span>
+                  )}
                 </Label>
                 <Select
-                  value={formData.ruangan}
-                  onValueChange={(value) => handleInputChange("ruangan", value)}
-                  disabled={isSaving}
+                  value={formData.ruanganId}
+                  onValueChange={(value) =>
+                    handleInputChange("ruanganId", value)
+                  }
+                  disabled={isSaving || isCheckingAvailability}
                 >
-                  <SelectTrigger name="ruangan" defaultValue={data?.ruangan ?? ""}>
+                  <SelectTrigger id="ruanganId">
                     <SelectValue placeholder="Pilih Ruangan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HU207">HU207</SelectItem>
-                    <SelectItem value="HU208">HU208</SelectItem>
-                    <SelectItem value="HU209">HU209</SelectItem>
-                    <SelectItem value="Lab RPL 1">
-                      Lab RPL 1
-                    </SelectItem>
-                    <SelectItem value="Lab RPL 2">
-                      Lab RPL 2
-                    </SelectItem>
+                    {availableRuangan.length > 0 ? (
+                      availableRuangan.map((ruangan) => (
+                        <SelectItem key={ruangan.id} value={ruangan.id}>
+                          {ruangan.nama}
+                          {ruangan.deskripsi && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              - {ruangan.deskripsi}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        {isCheckingAvailability
+                          ? "Memeriksa ketersediaan ruangan..."
+                          : formData.tanggalUjian &&
+                            formData.jamMulai &&
+                            formData.jamSelesai
+                          ? "Tidak ada ruangan tersedia pada waktu ini"
+                          : "Pilih tanggal dan waktu terlebih dahulu"}
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
-                {fieldErrors.ruangan && (
+                {fieldErrors.ruanganId && (
                   <p className="text-sm text-destructive">
-                    {fieldErrors.ruangan[0]}
+                    {fieldErrors.ruanganId[0]}
                   </p>
                 )}
               </div>
@@ -374,15 +478,21 @@ export function PenjadwalanModal({
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Pembimbing 1</Label>
                 <Input
-                  value={data.dosenPembimbing.name || ""}
+                  value={data?.dosenPembimbing.name || ""}
                   disabled
                   className="bg-gray-50"
                 />
               </div>
 
+              {/* Empty space for grid alignment */}
+              <div></div>
+
               {/* Pembimbing 2 (Select) */}
               <div className="space-y-2">
-                <Label htmlFor="dosenPenguji1" className="text-muted-foreground">
+                <Label
+                  htmlFor="dosenPenguji1"
+                  className="text-muted-foreground"
+                >
                   Pembimbing 2
                   {isCheckingAvailability && (
                     <span className="ml-2 text-xs">(Memeriksa...)</span>
@@ -403,7 +513,7 @@ export function PenjadwalanModal({
                       .filter(
                         (d) =>
                           d.id !== formData.dosenPenguji2 &&
-                          d.id !== data.dosenPembimbing.id
+                          d.id !== data?.dosenPembimbing.id
                       )
                       .map((dosen) => (
                         <SelectItem key={dosen.id} value={dosen.id}>
@@ -421,7 +531,10 @@ export function PenjadwalanModal({
 
               {/* Penguji */}
               <div className="space-y-2">
-                <Label htmlFor="dosenPenguji2" className="text-muted-foreground">
+                <Label
+                  htmlFor="dosenPenguji2"
+                  className="text-muted-foreground"
+                >
                   Penguji
                   {isCheckingAvailability && (
                     <span className="ml-2 text-xs">(Memeriksa...)</span>
@@ -442,7 +555,7 @@ export function PenjadwalanModal({
                       .filter(
                         (d) =>
                           d.id !== formData.dosenPenguji1 &&
-                          d.id !== data.dosenPembimbing.id
+                          d.id !== data?.dosenPembimbing.id
                       )
                       .map((dosen) => (
                         <SelectItem key={dosen.id} value={dosen.id}>

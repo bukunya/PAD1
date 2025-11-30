@@ -64,14 +64,20 @@ export interface FilterOptions {
 export async function detailJadwal(filters?: FilterOptions) {
   const session = await auth();
   if (!session?.user?.id)
-    return { success: false, error: "Anda harus login untuk mengakses detail jadwal" };
+    return {
+      success: false,
+      error: "Anda harus login untuk mengakses detail jadwal",
+    };
 
   const userId = session.user.id;
   const role = String(session.user.role || "").toUpperCase();
 
   const allowedRoles = ["ADMIN", "DOSEN", "MAHASISWA"];
   if (!allowedRoles.includes(role))
-    return { success: false, error: "Anda tidak memiliki akses ke halaman ini" };
+    return {
+      success: false,
+      error: "Anda tidak memiliki akses ke halaman ini",
+    };
 
   try {
     let data: DosenDJ[] | MahasiswaDJ[] | AdminDJ[] = [];
@@ -81,6 +87,7 @@ export async function detailJadwal(filters?: FilterOptions) {
          ADMIN
     ======================= */
     if (role === "ADMIN") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const whereClause: any = { status: "DIJADWALKAN" };
 
       if (filters?.startDate || filters?.endDate) {
@@ -95,14 +102,24 @@ export async function detailJadwal(filters?: FilterOptions) {
 
       if (filters?.search) {
         whereClause.OR = [
-          { mahasiswa: { name: { contains: filters.search, mode: "insensitive" } } },
-          { mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } } },
+          {
+            mahasiswa: {
+              name: { contains: filters.search, mode: "insensitive" },
+            },
+          },
+          {
+            mahasiswa: {
+              nim: { contains: filters.search, mode: "insensitive" },
+            },
+          },
         ];
       }
 
       totalCount = await prisma.ujian.count({ where: whereClause });
 
-      const skip = filters?.page ? (filters.page - 1) * (filters?.limit || 10) : 0;
+      const skip = filters?.page
+        ? (filters.page - 1) * (filters?.limit || 10)
+        : 0;
       const take = filters?.limit || 10;
 
       const adminData = await prisma.ujian.findMany({
@@ -111,12 +128,18 @@ export async function detailJadwal(filters?: FilterOptions) {
         take: filters ? take : undefined,
         select: {
           id: true,
-          mahasiswa: { select: { name: true, nim: true, image: true, prodi: true } },
+          mahasiswa: {
+            select: { name: true, nim: true, image: true, prodi: true },
+          },
           judul: true,
           tanggalUjian: true,
           jamMulai: true,
           jamSelesai: true,
-          ruangan: true,
+          ruangan: {
+            select: {
+              nama: true,
+            },
+          },
           dosenPembimbing: { select: { name: true } },
           dosenPenguji: { select: { dosen: { select: { name: true } } } },
         },
@@ -132,18 +155,16 @@ export async function detailJadwal(filters?: FilterOptions) {
         tanggal: item.tanggalUjian ?? null,
         jamMulai: item.jamMulai ?? null,
         jamSelesai: item.jamSelesai ?? null,
-        ruangan: item.ruangan || null,
+        ruangan: item.ruangan?.nama || null,
         prodi: item.mahasiswa?.prodi || null,
         angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
         dosenPembimbing: item.dosenPembimbing?.name || null,
-        dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name?? ""),
+        dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name ?? ""),
       }));
-    }
-
-    /* ======================
+    } else if (role === "DOSEN") {
+      /* ======================
          DOSEN
     ======================= */
-    else if (role === "DOSEN") {
       const dosenData = await prisma.ujian.findMany({
         where: {
           status: "DIJADWALKAN",
@@ -154,12 +175,18 @@ export async function detailJadwal(filters?: FilterOptions) {
         },
         select: {
           id: true,
-          mahasiswa: { select: { name: true, nim: true, image: true, prodi: true } },
+          mahasiswa: {
+            select: { name: true, nim: true, image: true, prodi: true },
+          },
           judul: true,
           tanggalUjian: true,
           jamMulai: true,
           jamSelesai: true,
-          ruangan: true,
+          ruangan: {
+            select: {
+              nama: true,
+            },
+          },
           dosenPembimbingId: true,
         },
         orderBy: { tanggalUjian: "asc" },
@@ -174,26 +201,29 @@ export async function detailJadwal(filters?: FilterOptions) {
         tanggal: item.tanggalUjian ?? null,
         jamMulai: item.jamMulai ?? null,
         jamSelesai: item.jamSelesai ?? null,
-        ruangan: item.ruangan || null,
+        ruangan: item.ruangan?.nama || null,
         isDosenPembimbing: item.dosenPembimbingId === userId,
         prodi: item.mahasiswa?.prodi || null,
         angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
       }));
-    }
-
-    /* ======================
+    } else if (role === "MAHASISWA") {
+      /* ======================
          MAHASISWA
     ======================= */
-    else if (role === "MAHASISWA") {
       const mahasiswaData = await prisma.ujian.findMany({
         where: { mahasiswaId: userId, status: "DIJADWALKAN" },
-        select: { 
-          id: true, 
-          judul: true, 
-          tanggalUjian: true, 
-          jamMulai: true, 
-          jamSelesai: true, 
-          ruangan: true },
+        select: {
+          id: true,
+          judul: true,
+          tanggalUjian: true,
+          jamMulai: true,
+          jamSelesai: true,
+          ruangan: {
+            select: {
+              nama: true,
+            },
+          },
+        },
         orderBy: { tanggalUjian: "asc" },
       });
 
@@ -203,7 +233,7 @@ export async function detailJadwal(filters?: FilterOptions) {
         tanggal: item.tanggalUjian ?? null,
         jamMulai: item.jamMulai ?? null,
         jamSelesai: item.jamSelesai ?? null,
-        ruangan: item.ruangan || null,
+        ruangan: item.ruangan?.nama || null,
       }));
     }
 
@@ -211,7 +241,9 @@ export async function detailJadwal(filters?: FilterOptions) {
       success: true,
       data,
       totalCount: filters ? totalCount : undefined,
-      totalPages: filters ? Math.ceil(totalCount / (filters?.limit || 10)) : undefined,
+      totalPages: filters
+        ? Math.ceil(totalCount / (filters?.limit || 10))
+        : undefined,
     };
   } catch (err) {
     console.error("Error detailJadwal:", err);
@@ -227,7 +259,10 @@ export async function getUjianDetailsForAll(ujianId: string) {
   try {
     const session = await auth();
     if (!session?.user?.id)
-      return { success: false, error: "Anda harus login untuk mengakses halaman ini" };
+      return {
+        success: false,
+        error: "Anda harus login untuk mengakses halaman ini",
+      };
 
     const userId = session.user.id;
     const userRole = session.user.role;
@@ -243,10 +278,18 @@ export async function getUjianDetailsForAll(ujianId: string) {
         tanggalUjian: true,
         jamMulai: true,
         jamSelesai: true,
-        ruangan: true,
-        mahasiswa: { select: { id: true, name: true, nim: true, prodi: true, image: true } },
+        ruangan: {
+          select: {
+            nama: true,
+          },
+        },
+        mahasiswa: {
+          select: { id: true, name: true, nim: true, prodi: true, image: true },
+        },
         dosenPembimbing: { select: { id: true, name: true } },
-        dosenPenguji: { select: { dosen: { select: { id: true, name: true } } } },
+        dosenPenguji: {
+          select: { dosen: { select: { id: true, name: true } } },
+        },
       },
     });
 
@@ -259,7 +302,10 @@ export async function getUjianDetailsForAll(ujianId: string) {
       ujian.dosenPenguji.some((p) => p.dosen.id === userId);
 
     if (!authorized)
-      return { success: false, error: "Anda tidak memiliki akses ke ujian ini" };
+      return {
+        success: false,
+        error: "Anda tidak memiliki akses ke ujian ini",
+      };
 
     return { success: true, data: ujian };
   } catch (err) {
@@ -276,12 +322,19 @@ export async function getAdminJadwal(filters?: FilterOptions) {
   const session = await auth();
 
   if (!session?.user?.id)
-    return { success: false, error: "Anda harus login untuk mengakses halaman ini" };
+    return {
+      success: false,
+      error: "Anda harus login untuk mengakses halaman ini",
+    };
 
   if (session.user.role !== "ADMIN")
-    return { success: false, error: "Halaman ini hanya dapat diakses oleh Admin Prodi" };
+    return {
+      success: false,
+      error: "Halaman ini hanya dapat diakses oleh Admin Prodi",
+    };
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { status: "DIJADWALKAN" };
 
     if (filters?.startDate || filters?.endDate) {
@@ -294,8 +347,14 @@ export async function getAdminJadwal(filters?: FilterOptions) {
 
     if (filters?.search) {
       whereClause.OR = [
-        { mahasiswa: { name: { contains: filters.search, mode: "insensitive" } } },
-        { mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } } },
+        {
+          mahasiswa: {
+            name: { contains: filters.search, mode: "insensitive" },
+          },
+        },
+        {
+          mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } },
+        },
       ];
     }
 
@@ -310,7 +369,11 @@ export async function getAdminJadwal(filters?: FilterOptions) {
         tanggalUjian: true,
         jamMulai: true,
         jamSelesai: true,
-        ruangan: true,
+        ruangan: {
+          select: {
+            nama: true,
+          },
+        },
         dosenPembimbing: { select: { name: true } },
         dosenPenguji: { select: { dosen: { select: { name: true } } } },
       },
@@ -326,7 +389,7 @@ export async function getAdminJadwal(filters?: FilterOptions) {
       tanggal: item.tanggalUjian ?? null,
       jamMulai: item.jamMulai ?? null,
       jamSelesai: item.jamSelesai ?? null,
-      ruangan: item.ruangan || null,
+      ruangan: item.ruangan?.nama || null,
       prodi: item.mahasiswa?.prodi || null,
       angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
       dosenPembimbing: item.dosenPembimbing?.name || null,

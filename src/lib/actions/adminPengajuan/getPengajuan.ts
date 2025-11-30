@@ -26,7 +26,10 @@ export async function getAllPengajuan(filters?: {
       };
     }
 
-    const whereClause: any = {};
+    const whereClause: {
+      status?: StatusUjian;
+      createdAt?: { gte: Date; lte: Date };
+    } = {};
 
     // Filter by status
     if (filters?.status) {

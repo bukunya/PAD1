@@ -89,11 +89,13 @@ export async function detailJadwal(filters?: FilterOptions) {
          ADMIN
       ====================== */
       case "ADMIN": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const whereClause: any = { status: "DIJADWALKAN" };
 
         if (filters?.startDate || filters?.endDate) {
           whereClause.tanggalUjian = {};
-          if (filters.startDate) whereClause.tanggalUjian.gte = filters.startDate;
+          if (filters.startDate)
+            whereClause.tanggalUjian.gte = filters.startDate;
           if (filters.endDate) whereClause.tanggalUjian.lte = filters.endDate;
         }
 
@@ -118,7 +120,9 @@ export async function detailJadwal(filters?: FilterOptions) {
 
         totalCount = await prisma.ujian.count({ where: whereClause });
 
-        const skip = filters?.page ? (filters.page - 1) * (filters?.limit || 10) : 0;
+        const skip = filters?.page
+          ? (filters.page - 1) * (filters?.limit || 10)
+          : 0;
         const take = filters?.limit || 10;
 
         const adminData = await prisma.ujian.findMany({
@@ -168,7 +172,7 @@ export async function detailJadwal(filters?: FilterOptions) {
             dosenPembimbing: item.dosenPembimbing?.name || null,
             dosenPenguji: item.dosenPenguji.map((dp) => dp.dosen.name || ""),
           };
-        });
+        }) as adminDJ[];
 
         break;
       }
@@ -222,7 +226,7 @@ export async function detailJadwal(filters?: FilterOptions) {
             prodi: item.mahasiswa?.prodi || null,
             angkatan,
           };
-        });
+        }) as dosenDJ[];
 
         break;
       }
@@ -252,7 +256,7 @@ export async function detailJadwal(filters?: FilterOptions) {
           tanggal: item.tanggalUjian ?? null,
           jamMulai: item.jamMulai ?? null,
           jamSelesai: item.jamSelesai ?? null,
-        }));
+        })) as mahasiswaDJ[];
 
         break;
       }
@@ -265,7 +269,9 @@ export async function detailJadwal(filters?: FilterOptions) {
       success: true,
       data,
       totalCount: filters ? totalCount : undefined,
-      totalPages: filters ? Math.ceil(totalCount / (filters?.limit || 10)) : undefined,
+      totalPages: filters
+        ? Math.ceil(totalCount / (filters?.limit || 10))
+        : undefined,
     };
   } catch (error) {
     console.error("Error in detailJadwal:", error);

@@ -31,7 +31,7 @@ interface FilterOptions {
 
 export async function getAdminJadwal(filters?: FilterOptions) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     return {
       success: false as const,
@@ -48,6 +48,7 @@ export async function getAdminJadwal(filters?: FilterOptions) {
 
   try {
     // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = {
       status: "DIJADWALKAN",
     };
@@ -70,8 +71,14 @@ export async function getAdminJadwal(filters?: FilterOptions) {
 
     if (filters?.search) {
       whereClause.OR = [
-        { mahasiswa: { name: { contains: filters.search, mode: "insensitive" } } },
-        { mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } } },
+        {
+          mahasiswa: {
+            name: { contains: filters.search, mode: "insensitive" },
+          },
+        },
+        {
+          mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } },
+        },
       ];
     }
 
@@ -92,7 +99,11 @@ export async function getAdminJadwal(filters?: FilterOptions) {
         tanggalUjian: true,
         jamMulai: true,
         jamSelesai: true,
-        ruangan: true,
+        ruangan: {
+          select: {
+            nama: true,
+          },
+        },
         dosenPembimbing: {
           select: {
             name: true,
@@ -113,8 +124,8 @@ export async function getAdminJadwal(filters?: FilterOptions) {
       },
     });
 
-    const data: AdminJadwalData[] = adminData.map((item) => {
-      const angkatan = "20" + item.mahasiswa?.nim?.substring(0, 2) || null;
+    const data = adminData.map((item) => {
+      const angkatan = item.mahasiswa?.nim?.substring(0, 4) || null;
 
       return {
         id: item.id,
@@ -125,13 +136,13 @@ export async function getAdminJadwal(filters?: FilterOptions) {
         tanggal: item.tanggalUjian ?? null,
         jamMulai: item.jamMulai ?? null,
         jamSelesai: item.jamSelesai ?? null,
-        ruangan: item.ruangan || null,
+        ruangan: item.ruangan?.nama || null,
         prodi: item.mahasiswa?.prodi || null,
         angkatan,
         dosenPembimbing: item.dosenPembimbing?.name || null,
         dosenPenguji: item.dosenPenguji.map((dp) => dp.dosen.name || ""),
       };
-    });
+    }) as AdminJadwalData[];
 
     return {
       success: true as const,
