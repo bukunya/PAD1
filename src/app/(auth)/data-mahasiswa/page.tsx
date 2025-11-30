@@ -1,161 +1,42 @@
-"use client";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { statistikMahasiswa } from "@/lib/actions/statistikDataMhsDsn/statistikMhs";
+import { getDosenName } from "@/lib/actions/profile/getDosenName";
+import { MahasiswaClient } from "@/components/data-mahasiswa/dm-client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { statistics } from "@/lib/actions/statistics";
-import Image from "next/image";
+export default async function DataMahasiswaPage() {
+  const session = await auth();
 
-interface Mahasiswa {
-  id: string;
-  name: string | null;
-  prodi: string | null;
-  image: string | null;
-  nim: string | null;
-}
-
-export default function Page() {
-  const { data: session, status } = useSession();
-  const [mhsData, setMhsData] = useState<Mahasiswa[]>([]);
-
-  useEffect(() => {
-    if (session?.user?.role === "ADMIN") {
-      try {
-        statistics().then((res) => {
-          if (res.success && res.data) {
-            setMhsData(res.data.mahasiswa);
-          } else {
-            setMhsData([]);
-          }
-        });
-      } catch (error) {
-        console.error("Error fetching jadwal data:", error);
-        setMhsData([]);
-      }
-    }
-  }, [session]);
-
-  if (status === "loading") {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">Mengambil Data...</p>
-      </Card>
-    );
-  }
-  if (!session) {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">
-          Anda harus login untuk melihat halaman ini.
-        </p>
-      </Card>
-    );
-  }
-  if (session.user?.role !== "ADMIN") {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">Akses ditolak. Hanya untuk ADMIN.</p>
-      </Card>
-    );
+  if (!session?.user?.id) {
+    redirect("/login");
   }
 
-  const thMhs = {
-    head: ["Nama Mahasiswa", "Angkatan", "Program Studi", "Status", "Aksi"],
-  };
+  if (session.user.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
+
+  const [mahasiswaResult, dosenResult] = await Promise.all([
+    statistikMahasiswa(),
+    getDosenName(),
+  ]);
+
+  if (!mahasiswaResult.success || !dosenResult.success) {
+    return (
+      <div className="space-y-6 p-6">
+        <h1 className="text-3xl font-bold text-gray-900">Data Mahasiswa</h1>
+        <div className="rounded-lg bg-red-50 p-4 text-red-600">
+          {mahasiswaResult.error || dosenResult.error || "Gagal memuat data"}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <Card className="h-full">
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Data Mahasiswa</h2>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {thMhs.head.map((head, index) => (
-                    <TableHead key={index}>{head}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mhsData.map((item, index) => (
-                  <TableRow key={index}>
-                    {mhsData.length > 0 ? (
-                      <>
-                        <TableCell>
-                          <div className="flex flex-row items-center">
-                            <div className="w-10 h-10 mr-4">
-                              {item.image ? (
-                                <Image
-                                  src={item.image}
-                                  alt={item.name || "Mahasiswa"}
-                                  width={40}
-                                  height={40}
-                                  className="w-10 h-10 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                  <span className="text-gray-600">
-                                    {item.name
-                                      ? item.name
-                                          .split(" ")
-                                          .map((n: string) => n[0])
-                                          .join("")
-                                          .toUpperCase()
-                                      : "?"}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span>{item.name || "N/A"}</span>
-                              <span className="text-sm text-muted-foreground">
-                                NIM: {item.nim}
-                              </span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {item.nim ? item.nim.slice(0, 2) : "N/A"}
-                        </TableCell>
-                        <TableCell>{item.prodi}</TableCell>
-                        <TableCell>
-                          <span>Aktif</span>
-                        </TableCell>
-                        <TableCell>
-                          {/* Placeholder for actions, e.g., View Details button */}
-                          <button className="text-blue-600 hover:underline">
-                            Lihat Detail
-                          </button>
-                        </TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell
-                          colSpan={thMhs.head.length}
-                          className="text-center"
-                        >
-                          Tidak ada data mahasiswa tersedia.
-                        </TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <div className="space-y-6 p-6">
+      <MahasiswaClient
+        mahasiswa={mahasiswaResult.data || []}
+        dosenList={dosenResult.namaDosen || []}
+      />
+    </div>
   );
 }
