@@ -91,7 +91,8 @@ model Ujian {
   tanggalUjian      DateTime?         // The date of the exam
   jamMulai          DateTime?         // Start date and time
   jamSelesai        DateTime?         // End date and time
-  ruangan           String?
+  ruanganId         String?
+  ruangan           Ruangan?          @relation(fields: [ruanganId], references: [id])
   googleCalendarEventId String?       // To update/delete the GCal event
 
   // --- Data Berita Acara (Post-Ujian) ---
@@ -128,6 +129,18 @@ model Notification {
   @@index([ujianId])
 }
 
+
+// Model untuk Ruangan
+model Ruangan {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  deskripsi String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ujian Ujian[]
+}
 
 // --- AUTH.JS MODELS ---
 model Account {

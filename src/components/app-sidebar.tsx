@@ -35,7 +35,7 @@ const dashboard = {
 
 const profile = {
   name: "Profil",
-  url: "/profil",
+  url: "/profile",
   icon: User,
 };
 
@@ -75,7 +75,7 @@ const dataDosn = {
     },
     {
       name: "Notifikasi",
-      url: "/notifikasi",
+      url: "/riwayat-pengajuan",
       icon: Bell,
     },
     profile,
@@ -91,7 +91,7 @@ const dataAdm = {
     },
     {
       name: "Formulir Penjadwalan",
-      url: "/formulir-penjadwalan",
+      url: "/form-penjadwalan",
       icon: FileClock,
     },
     {
