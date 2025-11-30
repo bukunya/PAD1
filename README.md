@@ -1,6 +1,6 @@
 <!-- PROJECT LOGO -->
 <div align="center">
-  <img src="public/drsn.png" alt="Dimes raja singa njir" width="200">
+  <!-- <img src="public/drsn.png" alt="Dimes raja singa njir" width="200"> -->
   
   <h1 align="center">Proyek Aplikasi Tak Berdasar?</h1>
   
@@ -10,11 +10,11 @@
     <a href="https://www.figma.com/design/nzla7YyIxsZeU6zRntEvAe/UI---Prototype-UGM?node-id=0-1&t=XG68xd4RfhkPzaRh-1"><strong>📖 Lihat Design »</strong></a>
     <br />
     <br />
-    <a href="#demo">Demo</a>
+    <!-- <a href="#demo">Demo</a>
     ·
     <a href="#instalasi">Instalasi</a>
     ·
-    <a href="#kontribusi">Kontribusi</a>
+    <a href="#kontribusi">Kontribusi</a> -->
   </p>
 </div>
 
