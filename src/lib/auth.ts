@@ -43,6 +43,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       });
     },
   },
+
+  pages: {
+    signIn: "/login",
+  },
+  
   callbacks: {
     // This callback is used to control if a user is allowed to sign in.
     async signIn({ profile }) {

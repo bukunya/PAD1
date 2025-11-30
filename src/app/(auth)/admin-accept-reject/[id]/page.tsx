@@ -8,7 +8,7 @@ import {
   getUjianForReview,
   acceptUjian,
   rejectUjian,
-} from "@/lib/actions/adminAcceptReject";
+} from "@/lib/actions/adminAssignUjian/adminTerimaTolakUjian";
 import {
   AlertCircle,
   CheckCircle,

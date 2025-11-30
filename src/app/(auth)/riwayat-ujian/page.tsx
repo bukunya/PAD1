@@ -1,172 +1,90 @@
-"use client";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { riwayatUjian } from "@/lib/actions/riwayatUjian/riwayatUjian";
+import { RiwayatUjianClient } from "@/components/riwayat-ujian/ru-client";
 
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { dashboardDetailJadwal } from "@/lib/actions/dashboardDetailJadwal";
-import Image from "next/image";
+interface PageProps {
+  searchParams: {
+    page?: string;
+  };
+}
 
-interface JadwalItem {
-  idUjian: string;
+interface DosenRU {
+  id: string;
   namaMahasiswa: string | null;
   nim: string | null;
   foto: string | null;
   judulTugasAkhir: string | null;
-  tanggal: Date | null;
-  jam: string | null;
-  ruangan: string | null;
-  dosenPenguji1: string | null;
-  dosenPenguji2: string | null;
-  dosenPembimbing: string | null;
-  status: string | null;
+  tanggal: string | null;
+  isDosenPembimbing: boolean;
+  completed: boolean;
 }
 
-export default function Page() {
-  const { data: session, status } = useSession();
-  const [dataRole, setDataRole] = useState<JadwalItem[]>([]);
-  const [date, setDate] = useState<Date>();
+export default async function RiwayatUjianPage({ searchParams }: PageProps) {
+  const session = await auth();
 
-  useEffect(() => {
-    if (session?.user?.role === "DOSEN") {
-      try {
-        dashboardDetailJadwal().then((res) => {
-          if (res.success && res.data) {
-            setDataRole(res.data);
-          } else {
-            setDataRole([]);
-          }
-          setDate(new Date());
-        });
-      } catch (error) {
-        console.error("Error fetching jadwal data:", error);
-        setDataRole([]);
-      }
-    }
-  }, [session]);
+  // Check authentication
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-  if (status === "loading") {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">Mengambil Data...</p>
-      </Card>
-    );
+  // Check role authorization
+  if (session.user.role !== "DOSEN") {
+    redirect("/dashboard");
   }
-  if (!session) {
+
+  const page = Number(searchParams.page) || 1;
+
+  // Fetch riwayat ujian data
+  const result = await riwayatUjian({
+    page,
+    limit: 10,
+  });
+
+  if (!result.success || !result.data || !result.pagination) {
     return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">
-          Anda harus login untuk melihat halaman ini.
-        </p>
-      </Card>
-    );
-  }
-  if (session.user?.role !== "DOSEN") {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <p className="font-medium">Akses ditolak. Hanya untuk DOSEN.</p>
-      </Card>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Riwayat Ujian</h1>
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-red-700">{result.error || "Gagal memuat data"}</p>
+        </div>
+      </div>
     );
   }
 
-  const thDosen = {
-    head: ["Nama Mahasiswa", "Judul Tugas Akhir", "Tanggal", "Peran", "Status"],
+  // Type guard to ensure we have DosenRU data
+  const isDosenData = (item: unknown): item is DosenRU => {
+    return (
+      typeof item === "object" &&
+      item !== null &&
+      "isDosenPembimbing" in item &&
+      "completed" in item
+    );
   };
 
+  // Filter only completed exams and ensure correct type
+  const completedData = result.data
+    .filter(isDosenData)
+    .filter((item) => item.completed);
+
   return (
-    <>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <Card className="h-full">
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Riwayat Ujian</h2>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {thDosen.head.map((head, index) => (
-                    <TableHead key={index}>{head}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dataRole.map((item, index) => (
-                  <TableRow key={index}>
-                    {dataRole &&
-                      item.status === "DIJADWALKAN" &&
-                      item.jam &&
-                      (date ? date : new Date()) >
-                        new Date(item.jam.split(" - ")[1]) && (
-                        <>
-                          <TableCell>
-                            <div className="flex flex-row items-center">
-                              <div className="w-10 h-10 mr-4">
-                                {item.foto ? (
-                                  <Image
-                                    src={item.foto}
-                                    alt={item.namaMahasiswa || "Mahasiswa"}
-                                    width={40}
-                                    height={40}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                    <span className="text-gray-600">
-                                      {item.namaMahasiswa
-                                        ? item.namaMahasiswa
-                                            .split(" ")
-                                            .map((n: string) => n[0])
-                                            .join("")
-                                            .toUpperCase()
-                                        : "?"}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex flex-col">
-                                <span>{item.namaMahasiswa || "N/A"}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  NIM: {item.nim}
-                                </span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.judulTugasAkhir}</TableCell>
-                          <TableCell>
-                            {item.tanggal
-                              ? format(new Date(item.tanggal), "dd MMMM yyyy")
-                              : "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            {item.dosenPembimbing === session.user?.name
-                              ? "Pembimbing"
-                              : item.dosenPenguji1 === session.user?.name ||
-                                item.dosenPenguji2 === session.user?.name
-                              ? "Penguji"
-                              : "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium text-green-600">
-                              SELESAI
-                            </span>
-                          </TableCell>
-                        </>
-                      )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Riwayat Ujian</h1>
       </div>
-    </>
+
+      <RiwayatUjianClient
+        data={completedData}
+        pagination={{
+          page: result.pagination.page,
+          limit: result.pagination.limit,
+          total: completedData.length,
+          totalPages: Math.ceil(completedData.length / result.pagination.limit),
+          hasMore: result.pagination.hasMore,
+        }}
+      />
+    </div>
   );
 }
