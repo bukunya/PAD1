@@ -1,12 +1,12 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { riwayatUjian } from "@/lib/actions/riwayatUjian/riwayatUjian";
 import { RiwayatUjianClient } from "@/components/riwayat-ujian/ru-client";
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 interface DosenRU {
@@ -23,17 +23,24 @@ interface DosenRU {
 export default async function RiwayatUjianPage({ searchParams }: PageProps) {
   const session = await auth();
 
-  // Check authentication
   if (!session?.user) {
     redirect("/login");
   }
 
-  // Check role authorization
-  if (session.user.role !== "DOSEN") {
-    redirect("/dashboard");
+  const allowedRoles = ["DOSEN"];
+  if (!allowedRoles.includes(session.user.role || "")) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Akses Ditolak</h2>
+          <p className="text-gray-600">Anda tidak memiliki akses ke halaman ini.</p>
+        </div>
+      </div>
+    );
   }
 
-  const page = Number(searchParams.page) || 1;
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
 
   // Fetch riwayat ujian data
   const result = await riwayatUjian({
@@ -64,10 +71,7 @@ export default async function RiwayatUjianPage({ searchParams }: PageProps) {
     );
   };
 
-  // Filter only completed exams and ensure correct type
-  const completedData = result.data
-    .filter(isDosenData)
-    .filter((item) => item.completed);
+  const ujianData = result.data.filter(isDosenData);
 
   return (
     <div className="space-y-6 p-6">
@@ -76,14 +80,8 @@ export default async function RiwayatUjianPage({ searchParams }: PageProps) {
       </div>
 
       <RiwayatUjianClient
-        data={completedData}
-        pagination={{
-          page: result.pagination.page,
-          limit: result.pagination.limit,
-          total: completedData.length,
-          totalPages: Math.ceil(completedData.length / result.pagination.limit),
-          hasMore: result.pagination.hasMore,
-        }}
+        data={ujianData}
+        pagination={result.pagination}
       />
     </div>
   );

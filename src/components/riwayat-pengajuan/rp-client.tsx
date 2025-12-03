@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,47 +37,57 @@ interface RiwayatPengajuanClientProps {
     totalPages: number;
     hasMore: boolean;
   };
-  userRole: string; 
+  userRole: string;
 }
 
-export default function RiwayatPengajuanClient({
+export function RiwayatPengajuanClient({
   initialData,
   pagination: initialPagination,
-  userRole, 
+  userRole,
 }: RiwayatPengajuanClientProps) {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(initialData);
+  const [notifications, setNotifications] = useState<Notification[]>(initialData);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPagination?.page || 1);
   const [hasMore, setHasMore] = useState(initialPagination?.hasMore || false);
 
-  // Filter notifications based on selected filter
+  // Dynamic page title based on role
+  const pageTitle = userRole === "DOSEN" ? "Notifikasi" : "Riwayat Pengajuan";
+
+  // Filter notifications
   const filteredNotifications = notifications.filter((notif) => {
-    if (selectedFilter === "all") return true;
+    // Apply status filter
+    if (selectedFilter !== "all") {
+      const message = notif.message.toLowerCase();
+      let matchesFilter = false;
 
-    const message = notif.message.toLowerCase();
+      switch (selectedFilter) {
+        case "submitted":
+          matchesFilter =
+            message.includes("dibuat") ||
+            message.includes("disubmit") ||
+            message.includes("diajukan");
+          break;
+        case "verified":
+          matchesFilter =
+            message.includes("diverifikasi") ||
+            message.includes("disetujui") ||
+            message.includes("diterima");
+          break;
+        case "scheduled":
+          matchesFilter = message.includes("dijadwalkan");
+          break;
+        case "rejected":
+          matchesFilter = message.includes("ditolak");
+          break;
+        default:
+          matchesFilter = true;
+      }
 
-    switch (selectedFilter) {
-      case "submitted":
-        return (
-          message.includes("dibuat") ||
-          message.includes("disubmit") ||
-          message.includes("diajukan")
-        );
-      case "verified":
-        return (
-          message.includes("diverifikasi") ||
-          message.includes("disetujui") ||
-          message.includes("diterima")
-        );
-      case "scheduled":
-        return message.includes("dijadwalkan");
-      case "rejected":
-        return message.includes("ditolak");
-      default:
-        return true;
+      if (!matchesFilter) return false;
     }
+
+    return true;
   });
 
   const handleLoadMore = async () => {
@@ -127,73 +137,75 @@ export default function RiwayatPengajuanClient({
   const emptyState = getEmptyStateMessage();
 
   return (
-    <Card className="border-none shadow-sm">
-      <CardHeader className="border-b">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle className="text-xl">Timeline Notifikasi</CardTitle>
+    <div className="space-y-6 p-6">
+      {/* Header with Title and Filter */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
 
-          {/* Filter */}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="submitted">Diajukan</SelectItem>
-                <SelectItem value="verified">Diverifikasi</SelectItem>
-                <SelectItem value="scheduled">Dijadwalkan</SelectItem>
-                <SelectItem value="rejected">Ditolak</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Filter Control */}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Semua Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="submitted">Diajukan</SelectItem>
+              <SelectItem value="verified">Diverifikasi</SelectItem>
+              <SelectItem value="scheduled">Dijadwalkan</SelectItem>
+              <SelectItem value="rejected">Ditolak</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="pt-6">
-        {filteredNotifications.length === 0 ? (
-          <div className="text-center py-12">
-            <Bell className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-muted-foreground text-lg mb-2">
-              {emptyState.title}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {emptyState.subtitle}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-0">
-            {filteredNotifications.map((notif, index) => (
-              <TimelineItem
-                key={notif.id}
-                notification={notif}
-                isLast={index === filteredNotifications.length - 1}
-              />
-            ))}
-          </div>
-        )}
+      {/* Content Card */}
+      <Card className="border-none shadow-sm">
+        <CardContent className="pt-6">
+          {filteredNotifications.length === 0 ? (
+            <div className="text-center py-12">
+              <Bell className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-muted-foreground text-lg mb-2">
+                {emptyState.title}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {emptyState.subtitle}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {filteredNotifications.map((notif, index) => (
+                <TimelineItem
+                  key={notif.id}
+                  notification={notif}
+                  isLast={index === filteredNotifications.length - 1}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Load More Button */}
-        {hasMore && filteredNotifications.length > 0 && (
-          <div className="mt-6 text-center border-t pt-6">
-            <Button
-              variant="outline"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Memuat...
-                </>
-              ) : (
-                "Muat Lebih Banyak"
-              )}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {/* Load More Button */}
+          {hasMore && filteredNotifications.length > 0 && (
+            <div className="mt-6 text-center border-t pt-6">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Memuat...
+                  </>
+                ) : (
+                  "Muat Lebih Banyak"
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

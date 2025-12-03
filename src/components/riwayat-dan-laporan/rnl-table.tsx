@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -22,9 +21,8 @@ export default function DpTable({
   currentPage, 
   totalPages, 
   onPageChange 
-}: DpTableProps) {
-  const router = useRouter();
 
+}: DpTableProps) {
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
     return format(new Date(date), "dd MMMM yyyy", { locale: id });

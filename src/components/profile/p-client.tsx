@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Loader2, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Save, AlertTriangle } from "lucide-react";
 import { updateProfile } from "@/lib/actions/profile/profile";
 import { useRouter } from "next/navigation";
 import {
@@ -305,14 +305,6 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                       {user.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-blue-600 hover:bg-blue-700"
-                    disabled
-                  >
-                    <Camera className="h-5 w-5" />
-                  </Button>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Foto Profil</p>

@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 interface EventData {
   id: string;
   namaMahasiswa?: string | null;
@@ -22,8 +20,7 @@ const COLORS = [
   "bg-purple-100 text-purple-700 border-purple-200",
 ];
 
-export default function KuEvent({ event, colorIndex }: KuEventProps) {
-  const router = useRouter();
+export default function KuEvent({ colorIndex }: KuEventProps) {
   const colorClass = COLORS[colorIndex % COLORS.length];
 
   return (

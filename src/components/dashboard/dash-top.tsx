@@ -227,9 +227,9 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
     SELESAI: {
       label: "Selesai",
       displayLabel: "Selesai",
-      bgColor: "bg-gray-50",
+      bgColor: "bg-purple-50",
       textColor: "text-gray-700",
-      iconBg: "bg-gray-100",
+      iconBg: "bg-purple-100",
       borderColor: "border-gray-200",
     },
     BELUM_MENGAJUKAN: {
@@ -242,8 +242,8 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
     },
   };
 
-  const currentStatus =
-    statusConfig[statusPengajuan] || statusConfig.BELUM_MENGAJUKAN;
+  const currentStatus = statusConfig[statusPengajuan] || statusConfig.BELUM_MENGAJUKAN;
+  const ruangIsScheduled = Boolean(upcomingExam?.ruangan);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,17 +275,35 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       </Card>
 
       {/* Tempat Ruang Ujian */}
-      <Card className="border border-purple-100 bg-purple-50 shadow-sm hover:shadow-md transition-shadow">
+      <Card
+        className={`border shadow-sm hover:shadow-md transition-shadow ${
+          ruangIsScheduled
+            ? "border-blue-100 bg-blue-50"
+            : "border-gray-200 bg-gray-50"
+        }`}
+      >
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2.5 sm:p-3 rounded-lg bg-purple-100 flex-shrink-0">
-              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+            <div
+              className={`p-2.5 sm:p-3 rounded-lg flex-shrink-0 ${
+                ruangIsScheduled ? "bg-blue-100" : "bg-gray-100"
+              }`}
+            >
+              <MapPin
+                className={`h-5 w-5 sm:h-6 sm:w-6 ${
+                  ruangIsScheduled ? "text-blue-600" : "text-gray-500"
+                }`}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                 Tempat Ruang Ujian
               </p>
-              <p className="text-base sm:text-xl font-bold text-gray-800 break-words">
+              <p
+                className={`text-base sm:text-xl font-bold break-words ${
+                  ruangIsScheduled ? "text-blue-700" : "text-gray-700"
+                }`}
+              >
                 {upcomingExam?.ruangan || "Belum Dijadwalkan"}
               </p>
             </div>

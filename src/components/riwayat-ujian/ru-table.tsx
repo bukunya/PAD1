@@ -20,7 +20,7 @@ interface RiwayatUjianTableProps {
   data: RiwayatUjianData[];
 }
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 export function RiwayatUjianTable({ data }: RiwayatUjianTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
