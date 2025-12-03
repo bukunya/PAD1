@@ -101,7 +101,7 @@ const FpTop = () => {
   }, [session, status]);
 
   const handleGoToProfile = () => {
-    router.push("/profil");
+    router.push("/profile");
   };
 
   // Show loading state while checking authentication

@@ -2,30 +2,50 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { format, addHours } from "date-fns";
+import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye } from "lucide-react";
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { DosenDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
 import BAModal from "@/components/berita-acara/ba-modal";
+import { toZonedTime, format as formatTz } from "date-fns-tz";
 
 interface DJDosenTableProps {
   data: DosenDJ[];
   loading: boolean;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function DJDosenTable({ data, loading }: DJDosenTableProps) {
   const [selectedUjianId, setSelectedUjianId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedData = data.slice(startIndex, endIndex);
 
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
     return format(new Date(date), "dd MMMM yyyy", { locale: id });
   };
 
-  const formatTime = (start: Date | null, end: Date | null) => {
+  const formatTime = (
+    start: Date | string | null,
+    end: Date | string | null
+  ) => {
     if (!start || !end) return "-";
-    return `${format(addHours(new Date(start), 7), "HH:mm")} - ${format(
-      addHours(new Date(end), 7),
-      "HH:mm"
+
+    const timeZone = "Asia/Jakarta";
+
+    const startDate = toZonedTime(new Date(start), timeZone);
+    const endDate = toZonedTime(new Date(end), timeZone);
+
+    return `${formatTz(startDate, "HH:mm", { timeZone })} - ${formatTz(
+      endDate,
+      "HH:mm",
+      { timeZone }
     )}`;
   };
 
@@ -38,14 +58,54 @@ export default function DJDosenTable({ data, loading }: DJDosenTableProps) {
     return isPembimbing ? "Pembimbing" : "Penguji";
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
   if (loading) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="animate-pulse space-y-4">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="animate-pulse p-6">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 rounded-lg border p-4"
+              className="mb-4 flex items-center gap-4 rounded-lg border p-4"
             >
               <div className="h-12 w-12 rounded-full bg-gray-200" />
               <div className="flex-1 space-y-2">
@@ -61,8 +121,38 @@ export default function DJDosenTable({ data, loading }: DJDosenTableProps) {
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg bg-white p-12 text-center shadow">
-        <p className="text-gray-500">Tidak ada jadwal ujian ditemukan</p>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full">
+          <thead className="border-b bg-blue-50">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Mahasiswa
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Judul TA
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Tanggal
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Jam & Ruangan
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Peran & Prodi
+              </th>
+              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                Aksi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            <tr>
+              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                Tidak ada jadwal ujian ditemukan
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   }
@@ -70,109 +160,173 @@ export default function DJDosenTable({ data, loading }: DJDosenTableProps) {
   return (
     <>
       <div className="space-y-4">
-        {/* Table Header */}
-        <div className="rounded-t-lg bg-blue-50 p-4">
-          <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
-            <div className="col-span-2">Mahasiswa</div>
-            <div className="col-span-3">Judul TA</div>
-            <div className="col-span-2">Tanggal</div>
-            <div className="col-span-2">Jam & Ruangan</div>
-            <div className="col-span-2">Peran & Prodi</div>
-            <div className="col-span-1 text-center">Aksi</div>
-          </div>
-        </div>
-
-        {/* Table Rows */}
-        <div className="space-y-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-            >
-              <div className="grid grid-cols-12 gap-4">
-                {/* Mahasiswa */}
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-gray-200">
-                    {item.foto ? (
-                      <Image
-                        src={item.foto}
-                        alt={item.namaMahasiswa || "Mahasiswa"}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm font-medium text-gray-600">
-                        {item.namaMahasiswa?.charAt(0) || "M"}
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+          <table className="w-full">
+            <thead className="border-b bg-blue-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Mahasiswa
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Judul TA
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Tanggal
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Jam & Ruangan
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Peran & Prodi
+                </th>
+                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {paginatedData.map((item) => (
+                <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-gray-200">
+                        {item.foto ? (
+                          <Image
+                            src={item.foto}
+                            alt={item.namaMahasiswa || "Mahasiswa"}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center bg-blue-100 text-sm font-medium text-blue-600">
+                            {item.namaMahasiswa?.charAt(0) || "M"}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium text-gray-900">
-                      {item.namaMahasiswa || "-"}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {item.nim || "-"}
-                    </span>
-                  </div>
-                </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {item.namaMahasiswa || "-"}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {item.nim || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
 
-                {/* Judul TA */}
-                <div className="col-span-3 flex items-center">
-                  <span className="text-sm text-gray-900 line-clamp-2">
-                    {item.judulTugasAkhir || "-"}
-                  </span>
-                </div>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-700 line-clamp-2">
+                      {item.judulTugasAkhir || "-"}
+                    </span>
+                  </td>
 
-                {/* Tanggal */}
-                <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-700">
                     {formatDate(item.tanggal)}
-                  </span>
-                </div>
+                  </td>
 
-                {/* Jam & Ruangan */}
-                <div className="col-span-2 flex flex-col justify-center">
-                  <span className="text-sm text-gray-900">
-                    {formatTime(item.jamMulai, item.jamSelesai)}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {item.ruangan || "-"}
-                  </span>
-                </div>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-700">
+                        {formatTime(item.jamMulai, item.jamSelesai)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {item.ruangan || "-"}
+                      </p>
+                    </div>
+                  </td>
 
-                {/* Peran & Prodi */}
-                <div className="col-span-2 flex flex-col justify-center">
-                  <span
-                    className={`text-sm font-medium ${
-                      item.isDosenPembimbing
-                        ? "text-blue-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {getPeranLabel(item.isDosenPembimbing)}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {formatProdi(item.prodi)} - {item.angkatan || "-"}
-                  </span>
-                </div>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <p
+                        className={`text-sm font-medium ${
+                          item.isDosenPembimbing
+                            ? "text-blue-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {getPeranLabel(item.isDosenPembimbing)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {formatProdi(item.prodi)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Angkatan {"20" + item.angkatan || "-"}
+                      </p>
+                    </div>
+                  </td>
 
-                {/* Aksi */}
-                <div className="col-span-1 flex items-center justify-center">
-                  <button
-                    onClick={() => setSelectedUjianId(item.id)}
-                    className="rounded-lg bg-blue-500 p-2 text-white transition hover:bg-blue-600"
-                    title="Lihat Berita Acara"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedUjianId(item.id)}
+                        className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        title="Lihat Berita Acara"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {getPageNumbers().map((page, index) =>
+              page === "ellipsis" ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="flex h-9 w-9 items-center justify-center text-gray-600"
+                >
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handlePageChange(page as number)}
+                  className={`h-9 w-9 ${
+                    currentPage === page
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {page}
+                </Button>
+              )
+            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                currentPage < totalPages && handlePageChange(currentPage + 1)
+              }
+              disabled={currentPage === totalPages}
+              className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Modal Berita Acara */}
       {selectedUjianId && (
         <BAModal
           ujianId={selectedUjianId}

@@ -11,19 +11,13 @@ import {
   Bell,
   SquareUser,
   ClipboardList,
-  Settings2,
-  SquareTerminal,
+  Building2,
 } from "lucide-react";
-
-import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
-import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
 
@@ -60,6 +54,7 @@ const dataMhs = {
     profile,
   ],
 };
+
 const dataDosn = {
   projects: [
     dashboard,
@@ -81,6 +76,7 @@ const dataDosn = {
     profile,
   ],
 };
+
 const dataAdm = {
   projects: [
     dashboard,
@@ -98,6 +94,11 @@ const dataAdm = {
       name: "Kalender Utama",
       url: "/kalender-utama",
       icon: Calendar,
+    },
+    {
+      name: "Manajemen Ruangan",
+      url: "/ruangan",
+      icon: Building2,
     },
     {
       name: "Data Mahasiswa",
@@ -149,6 +150,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   } else {
     dataNav = dataMhs; // default to mahasiswa if role is undefined
   }
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <div className="p-8" />

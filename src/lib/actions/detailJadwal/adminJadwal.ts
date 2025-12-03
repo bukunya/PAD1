@@ -125,7 +125,7 @@ export async function getAdminJadwal(filters?: FilterOptions) {
     });
 
     const data = adminData.map((item) => {
-      const angkatan = item.mahasiswa?.nim?.substring(0, 4) || null;
+      const angkatan = item.mahasiswa?.nim?.substring(0, 2) || null;
 
       return {
         id: item.id,

@@ -1,4 +1,3 @@
-// src/components/pengajuan/pengajuan-modal-verify.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,6 +17,8 @@ import {
   AlertCircle,
   Download,
   FileText,
+  Users,
+  BookOpen,
 } from "lucide-react";
 import {
   getUjianForReview,
@@ -95,6 +96,7 @@ export function PengajuanModalVerify({
         });
 
         setTimeout(() => {
+          router.push("/form-penjadwalan");
           router.refresh();
           onClose();
         }, 1500);
@@ -147,121 +149,178 @@ export function PengajuanModalVerify({
     }
   };
 
+  const formatProdi = (prodi: string | null | undefined) => {
+    if (!prodi) return "-";
+    return prodi.replace(/([A-Z])/g, " $1").trim();
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Pengajuan Mahasiswa
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col sm:sm:max-w-3xl">
+        <DialogHeader className="flex-shrink-0 pb-4 border-b">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <FileText className="h-6 w-6 text-blue-600" />
+            Verifikasi Pengajuan
           </DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
           </div>
         ) : error ? (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="m-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : (
-          <div className="space-y-6">
-            {/* Status Message */}
-            {message && (
-              <Alert
-                variant={message.type === "error" ? "destructive" : "default"}
-              >
-                {message.type === "success" ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>{message.text}</AlertDescription>
-              </Alert>
-            )}
+          <>
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+              {message && (
+                <Alert
+                  variant={message.type === "error" ? "destructive" : "default"}
+                  className={message.type === "success" ? "bg-green-50 border-green-200" : ""}
+                >
+                  {message.type === "success" ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  <AlertDescription className={message.type === "success" ? "text-green-800" : ""}>
+                    {message.text}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {/* Mahasiswa Info */}
-            <div className="p-4 bg-blue-50 rounded-lg space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">
-                Nama Mahasiswa
-              </h3>
-              <p className="text-lg font-bold">{data?.mahasiswa.name}</p>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">NIM/ ID Mahasiswa</p>
-                  <p className="font-medium">{data?.mahasiswa.nim}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Jurusan</p>
-                  <p className="font-medium">
-                    {data?.mahasiswa.prodi || "Teknik Informatika"}
-                  </p>
+              {/* Data Mahasiswa */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
+                <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  Data Mahasiswa
+                </h3>
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-4">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                      Nama Mahasiswa
+                    </p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {data?.mahasiswa.name || "-"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                        NIM / ID Mahasiswa
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {data?.mahasiswa.nim || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                        Program Studi
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {formatProdi(data?.mahasiswa.prodi)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Judul TA */}
-            <div>
-              <Label className="text-muted-foreground text-sm">
-                Judul Tugas Akhir
-              </Label>
-              <p className="mt-2 text-base font-medium">{data?.judul}</p>
-            </div>
-
-            {/* Berkas */}
-            <div>
-              <Label className="text-muted-foreground text-sm">Berkas</Label>
-              <div className="mt-2 p-4 border rounded-lg flex items-center justify-between bg-blue-50">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-blue-500 rounded flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-white" />
+              {/* Judul Tugas Akhir */}
+              <div className="bg-white rounded-xl p-5 border border-gray-200">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5">
+                    <BookOpen className="h-5 w-5 text-gray-400" />
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {data?.berkasUrl
-                        ? data.berkasUrl.split("/").pop()
-                        : "Tidak ada berkas"}
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Judul Tugas Akhir
+                    </p>
+                    <p className="text-base font-medium text-gray-900 leading-relaxed">
+                      {data?.judul || "-"}
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <a
-                    href={data?.berkasUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Download className="h-4 w-4" />
-                  </a>
-                </Button>
               </div>
+
+              {/* Berkas */}
+              {data?.berkasUrl && (
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0 h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <FileText className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-gray-900">
+                          Dokumen Tugas Akhir
+                        </p>
+                        <p className="text-sm text-gray-600 mt-0.5 truncate max-w-xs">
+                          {data.berkasUrl.split("/").pop()}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="default"
+                      asChild
+                      className="flex-shrink-0 hover:bg-blue-200"
+                    >
+                      <a
+                        href={data.berkasUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reject Form (Collapsible) */}
+              {showRejectForm && (
+                <div className="bg-red-50 rounded-xl p-5 border border-red-200 space-y-3">
+                  <Label htmlFor="komentar" className="text-sm font-semibold text-gray-900">
+                    Komentar / Alasan Penolakan (Opsional)
+                  </Label>
+                  <textarea
+                    id="komentar"
+                    value={komentarAdmin}
+                    onChange={(e) => setKomentarAdmin(e.target.value)}
+                    placeholder="Masukkan alasan penolakan..."
+                    rows={4}
+                    disabled={isProcessing}
+                    className="flex w-full rounded-md border border-red-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Status Warning */}
+              {data?.status && data.status !== "MENUNGGU_VERIFIKASI" && (
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-5 w-5 text-amber-600" />
+                  <AlertDescription>
+                    <p className="font-semibold text-gray-900 mb-1.5 text-sm">
+                      Status Pengajuan
+                    </p>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Pengajuan ini sudah diproses dengan status: <span className="font-semibold">{data.status}</span>
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
-            {/* Reject Form (Conditional) */}
-            {showRejectForm && (
-              <div>
-                <Label htmlFor="komentar">
-                  Komentar / Alasan Penolakan (Opsional)
-                </Label>
-                <textarea
-                  id="komentar"
-                  value={komentarAdmin}
-                  onChange={(e) => setKomentarAdmin(e.target.value)}
-                  placeholder="Masukkan alasan penolakan..."
-                  rows={4}
-                  disabled={isProcessing}
-                  className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
+            {/* Action Buttons - Fixed at bottom */}
+            <div className="flex-shrink-0 px-6 py-4 border-t bg-gray-50">
               {!showRejectForm ? (
-                <>
+                <div className="flex gap-3">
                   <Button
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 h-11"
                     onClick={handleAccept}
                     disabled={
                       isProcessing || data?.status !== "MENUNGGU_VERIFIKASI"
@@ -281,21 +340,21 @@ export function PengajuanModalVerify({
                   </Button>
                   <Button
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 h-11"
                     onClick={() => setShowRejectForm(true)}
                     disabled={
                       isProcessing || data?.status !== "MENUNGGU_VERIFIKASI"
                     }
                   >
                     <XCircle className="mr-2 h-4 w-4" />
-                    Ditolak
+                    Tolak
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
+                <div className="flex gap-3">
                   <Button
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 h-11"
                     onClick={handleReject}
                     disabled={isProcessing}
                   >
@@ -313,7 +372,7 @@ export function PengajuanModalVerify({
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 h-11"
                     onClick={() => {
                       setShowRejectForm(false);
                       setKomentarAdmin("");
@@ -322,10 +381,10 @@ export function PengajuanModalVerify({
                   >
                     Batal
                   </Button>
-                </>
+                </div>
               )}
             </div>
-          </div>
+          </>
         )}
       </DialogContent>
     </Dialog>

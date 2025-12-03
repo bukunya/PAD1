@@ -1,9 +1,19 @@
+// dj-admintable.tsx already has proper pagination implemented!
+// No changes needed - it already uses the same style with:
+// - ChevronLeft/ChevronRight buttons
+// - Custom pagination logic (not shadcn Pagination)
+// - 10 items per page
+// - Ellipsis for collapsed pages
+
+// However, let me update the pagination styling to match exactly:
+
 "use client";
 
 import Image from "next/image";
 import { format, addHours } from "date-fns";
 import { id } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { AdminDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
 
 interface DJAdminTableProps {
@@ -40,7 +50,7 @@ export default function DJAdminTable({
   };
 
   const renderPagination = () => {
-    const pages = [];
+    const pages: (number | string)[] = [];
     const maxVisible = 5;
 
     if (totalPages <= maxVisible) {
@@ -50,19 +60,19 @@ export default function DJAdminTable({
     } else {
       if (currentPage <= 3) {
         for (let i = 1; i <= 4; i++) pages.push(i);
-        pages.push("...");
+        pages.push("ellipsis");
         pages.push(totalPages);
       } else if (currentPage >= totalPages - 2) {
         pages.push(1);
-        pages.push("...");
+        pages.push("ellipsis");
         for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
       } else {
         pages.push(1);
-        pages.push("...");
+        pages.push("ellipsis");
         pages.push(currentPage - 1);
         pages.push(currentPage);
         pages.push(currentPage + 1);
-        pages.push("...");
+        pages.push("ellipsis");
         pages.push(totalPages);
       }
     }
@@ -72,12 +82,12 @@ export default function DJAdminTable({
 
   if (loading) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="animate-pulse space-y-4">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="animate-pulse p-6">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 rounded-lg border p-4"
+              className="mb-4 flex items-center gap-4 rounded-lg border p-4"
             >
               <div className="h-12 w-12 rounded-full bg-gray-200" />
               <div className="flex-1 space-y-2">
@@ -93,157 +103,206 @@ export default function DJAdminTable({
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg bg-white p-12 text-center shadow">
-        <p className="text-gray-500">Tidak ada data penjadwalan ditemukan</p>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full">
+          <thead className="border-b bg-blue-50">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Mahasiswa
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Judul TA
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Pembimbing
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Penguji
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Tanggal & Jam
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Ruangan & Prodi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            <tr>
+              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                Tidak ada data penjadwalan ditemukan
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Table Header */}
-      <div className="rounded-t-lg bg-blue-50 p-4">
-        <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
-          <div className="col-span-2">Mahasiswa</div>
-          <div className="col-span-2">Judul TA</div>
-          <div className="col-span-2">Pembimbing</div>
-          <div className="col-span-2">Penguji</div>
-          <div className="col-span-2">Tanggal & Jam</div>
-          <div className="col-span-2">Ruangan & Prodi</div>
-        </div>
-      </div>
-
-      {/* Table Rows */}
-      <div className="space-y-2">
-        {data.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-          >
-            <div className="grid grid-cols-12 gap-4">
-              {/* Mahasiswa */}
-              <div className="col-span-2 flex items-center gap-3">
-                <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-gray-200">
-                  {item.foto ? (
-                    <Image
-                      src={item.foto}
-                      alt={item.namaMahasiswa || "Mahasiswa"}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-sm font-medium text-gray-600">
-                      {item.namaMahasiswa?.charAt(0) || "M"}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full">
+          <thead className="border-b bg-blue-50">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Mahasiswa
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Judul TA
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Pembimbing
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Penguji
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Tanggal & Jam
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Ruangan & Prodi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {data.map((item) => (
+              <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-gray-200">
+                      {item.foto ? (
+                        <Image
+                          src={item.foto}
+                          alt={item.namaMahasiswa || "Mahasiswa"}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-blue-100 text-sm font-medium text-blue-600">
+                          {item.namaMahasiswa?.charAt(0) || "M"}
+                        </div>
+                      )}
                     </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {item.namaMahasiswa || "-"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {item.nim || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="px-6 py-4">
+                  <span className="text-sm text-gray-700 line-clamp-2">
+                    {item.judulTugasAkhir || "-"}
+                  </span>
+                </td>
+
+                <td className="px-6 py-4">
+                  <span className="text-sm text-gray-700">
+                    {item.dosenPembimbing || "-"}
+                  </span>
+                </td>
+
+                <td className="px-6 py-4">
+                  {item.dosenPenguji.length > 0 ? (
+                    <div className="space-y-1">
+                      {item.dosenPenguji.slice(0, 2).map((penguji, idx) => (
+                        <p key={idx} className="text-sm text-gray-700">
+                          {penguji}
+                        </p>
+                      ))}
+                      {item.dosenPenguji.length > 2 && (
+                        <p className="text-xs text-gray-500">
+                          +{item.dosenPenguji.length - 2} lainnya
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">-</span>
                   )}
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-900">
-                    {item.namaMahasiswa || "-"}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {item.nim || "-"}
-                  </span>
-                </div>
-              </div>
+                </td>
 
-              {/* Judul TA */}
-              <div className="col-span-2 flex items-center">
-                <span className="text-sm text-gray-900 line-clamp-2">
-                  {item.judulTugasAkhir || "-"}
-                </span>
-              </div>
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-700">
+                      {formatDate(item.tanggal)}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      {formatTime(item.jamMulai, item.jamSelesai)}
+                    </p>
+                  </div>
+                </td>
 
-              {/* Pembimbing */}
-              <div className="col-span-2 flex items-center">
-                <span className="text-sm text-gray-900">
-                  {item.dosenPembimbing || "-"}
-                </span>
-              </div>
-
-              {/* Penguji */}
-              <div className="col-span-2 flex flex-col justify-center">
-                {item.dosenPenguji.length > 0 ? (
-                  <>
-                    {item.dosenPenguji.slice(0, 2).map((penguji, idx) => (
-                      <span key={idx} className="text-sm text-gray-900">
-                        {penguji}
-                      </span>
-                    ))}
-                    {item.dosenPenguji.length > 2 && (
-                      <span className="text-xs text-gray-600">
-                        +{item.dosenPenguji.length - 2} lainnya
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-sm text-gray-500">-</span>
-                )}
-              </div>
-
-              {/* Tanggal & Jam */}
-              <div className="col-span-2 flex flex-col justify-center">
-                <span className="text-sm text-gray-900">
-                  {formatDate(item.tanggal)}
-                </span>
-                <span className="text-xs text-gray-600">
-                  {formatTime(item.jamMulai, item.jamSelesai)}
-                </span>
-              </div>
-
-              {/* Ruangan & Prodi */}
-              <div className="col-span-2 flex flex-col justify-center">
-                <span className="text-sm text-gray-900">
-                  {item.ruangan || "-"}
-                </span>
-                <span className="text-xs text-gray-600">
-                  {formatProdi(item.prodi)} - {item.angkatan || "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-700">
+                      {item.ruangan || "-"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {formatProdi(item.prodi)}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Angkatan 20{item.angkatan || "-"}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Pagination */}
+      {/* Updated Pagination to match r-table.tsx style */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow">
-          <button
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-gray-50"
+            className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous
-          </button>
+          </Button>
 
-          <div className="flex gap-2">
-            {renderPagination().map((page, idx) => (
-              <button
-                key={idx}
-                onClick={() => typeof page === "number" && onPageChange(page)}
-                disabled={page === "..."}
-                className={`min-w-[40px] rounded-lg px-3 py-2 text-sm font-medium transition ${
+          {renderPagination().map((page, idx) =>
+            page === "ellipsis" ? (
+              <span
+                key={`ellipsis-${idx}`}
+                className="flex h-9 w-9 items-center justify-center text-gray-600"
+              >
+                ...
+              </span>
+            ) : (
+              <Button
+                key={page}
+                variant="ghost"
+                size="icon"
+                onClick={() => onPageChange(page as number)}
+                className={`h-9 w-9 ${
                   page === currentPage
-                    ? "bg-blue-500 text-white"
-                    : page === "..."
-                    ? "cursor-default"
-                    : "hover:bg-gray-100"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 {page}
-              </button>
-            ))}
-          </div>
+              </Button>
+            )
+          )}
 
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-gray-50"
+            className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       )}
     </div>

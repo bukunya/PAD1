@@ -1,4 +1,3 @@
-// src/components/dashboard/dash-top.tsx
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +36,7 @@ export function TopSection({ role, topData }: TopSectionProps) {
   return null;
 }
 
-// Admin Statistics - ALL DATA FROM BACKEND
+// Admin Statistics - 4 cards with better responsive grid
 function AdminTopSection({ topData }: { topData: TopData }) {
   const stats = [
     {
@@ -46,6 +45,7 @@ function AdminTopSection({ topData }: { topData: TopData }) {
       icon: GraduationCap,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      borderColor: "border-blue-100",
     },
     {
       label: "Dosen Aktif",
@@ -53,6 +53,7 @@ function AdminTopSection({ topData }: { topData: TopData }) {
       icon: Users,
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
     },
     {
       label: "Jadwal Ujian Terdekat",
@@ -60,30 +61,41 @@ function AdminTopSection({ topData }: { topData: TopData }) {
       icon: Calendar,
       color: "text-pink-600",
       bgColor: "bg-pink-50",
+      borderColor: "border-pink-100",
     },
     {
       label: "Ujian Selesai Bulan Ini",
-      value: topData?.ujianSelesaiBulanIni || 0, // ✅ NOW FROM BACKEND
+      value: topData?.ujianSelesaiBulanIni || 0,
       icon: CheckCircle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
+      borderColor: "border-orange-100",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
+          <Card
+            key={index}
+            className={`border ${stat.borderColor} shadow-sm hover:shadow-md transition-shadow`}
+          >
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2.5 sm:p-3 rounded-lg ${stat.bgColor} flex-shrink-0`}
+                >
+                  <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 line-clamp-2">
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -94,7 +106,7 @@ function AdminTopSection({ topData }: { topData: TopData }) {
   );
 }
 
-// Dosen Statistics - ALL DATA FROM BACKEND
+// Dosen Statistics - 4 cards with better responsive grid
 function DosenTopSection({ topData }: { topData: TopData }) {
   const stats = [
     {
@@ -103,6 +115,7 @@ function DosenTopSection({ topData }: { topData: TopData }) {
       icon: Calendar,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
+      borderColor: "border-purple-100",
     },
     {
       label: "Mahasiswa Dibimbing",
@@ -110,37 +123,49 @@ function DosenTopSection({ topData }: { topData: TopData }) {
       icon: Users,
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
     },
     {
       label: "Ujian Selesai Bulan Ini",
-      value: topData?.ujianSelesaiBulanIni || 0, // ✅ NOW FROM BACKEND
+      value: topData?.ujianSelesaiBulanIni || 0,
       icon: CheckCircle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
+      borderColor: "border-orange-100",
     },
     {
       label: "Jadwal Ujian Ditunda",
-      value: topData?.jadwalDitunda || 0, // ✅ NOW FROM BACKEND (will be 0 if status doesn't exist)
+      value: topData?.jadwalDitunda || 0,
       icon: Clock,
       color: "text-pink-600",
       bgColor: "bg-pink-50",
+      borderColor: "border-pink-100",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
+          <Card
+            key={index}
+            className={`border ${stat.borderColor} shadow-sm hover:shadow-md transition-shadow`}
+          >
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2.5 sm:p-3 rounded-lg ${stat.bgColor} flex-shrink-0`}
+                >
+                  <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 line-clamp-2">
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -151,7 +176,7 @@ function DosenTopSection({ topData }: { topData: TopData }) {
   );
 }
 
-// Mahasiswa Statistics - Different Layout (2 cards side by side)
+// Mahasiswa Statistics - 2 larger cards, fully responsive
 function MahasiswaTopSection({ topData }: { topData: TopData }) {
   const statusPengajuan = topData?.statusPengajuan || "BELUM_MENGAJUKAN";
   const upcomingExam = topData?.data?.[0];
@@ -164,6 +189,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: string;
       textColor: string;
       iconBg: string;
+      borderColor: string;
     }
   > = {
     MENUNGGU_VERIFIKASI: {
@@ -172,6 +198,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-yellow-50",
       textColor: "text-yellow-700",
       iconBg: "bg-yellow-100",
+      borderColor: "border-yellow-200",
     },
     DITERIMA: {
       label: "Diterima",
@@ -179,6 +206,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-green-50",
       textColor: "text-green-700",
       iconBg: "bg-green-100",
+      borderColor: "border-green-200",
     },
     DITOLAK: {
       label: "Ditolak",
@@ -186,6 +214,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-red-50",
       textColor: "text-red-700",
       iconBg: "bg-red-100",
+      borderColor: "border-red-200",
     },
     DIJADWALKAN: {
       label: "Sudah Dijadwalkan",
@@ -193,6 +222,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-blue-50",
       textColor: "text-blue-700",
       iconBg: "bg-blue-100",
+      borderColor: "border-blue-200",
     },
     SELESAI: {
       label: "Selesai",
@@ -200,6 +230,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-gray-50",
       textColor: "text-gray-700",
       iconBg: "bg-gray-100",
+      borderColor: "border-gray-200",
     },
     BELUM_MENGAJUKAN: {
       label: "Belum Mengajukan",
@@ -207,6 +238,7 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       bgColor: "bg-gray-50",
       textColor: "text-gray-700",
       iconBg: "bg-gray-100",
+      borderColor: "border-gray-200",
     },
   };
 
@@ -216,17 +248,25 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Status Pengajuan */}
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-lg ${currentStatus.iconBg}`}>
-              <Calendar className={`h-6 w-6 ${currentStatus.textColor}`} />
+      <Card
+        className={`border ${currentStatus.borderColor} ${currentStatus.bgColor} shadow-sm hover:shadow-md transition-shadow`}
+      >
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div
+              className={`p-2.5 sm:p-3 rounded-lg ${currentStatus.iconBg} flex-shrink-0`}
+            >
+              <Calendar
+                className={`h-5 w-5 sm:h-6 sm:w-6 ${currentStatus.textColor}`}
+              />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-500 mb-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                 Status Pengajuan Ujian
               </p>
-              <p className={`text-xl font-bold ${currentStatus.textColor}`}>
+              <p
+                className={`text-base sm:text-xl font-bold ${currentStatus.textColor} break-words`}
+              >
                 {currentStatus.displayLabel}
               </p>
             </div>
@@ -235,15 +275,17 @@ function MahasiswaTopSection({ topData }: { topData: TopData }) {
       </Card>
 
       {/* Tempat Ruang Ujian */}
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-lg bg-purple-100">
-              <MapPin className="h-6 w-6 text-purple-600" />
+      <Card className="border border-purple-100 bg-purple-50 shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="p-2.5 sm:p-3 rounded-lg bg-purple-100 flex-shrink-0">
+              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-500 mb-2">Tempat Ruang Ujian</p>
-              <p className="text-xl font-bold text-gray-800">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
+                Tempat Ruang Ujian
+              </p>
+              <p className="text-base sm:text-xl font-bold text-gray-800 break-words">
                 {upcomingExam?.ruangan || "Belum Dijadwalkan"}
               </p>
             </div>

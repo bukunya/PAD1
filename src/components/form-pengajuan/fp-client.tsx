@@ -117,7 +117,7 @@ export default function FpClient({ profile }: FpClientProps) {
             </p>
             <Button
               variant="outline"
-              onClick={() => router.push("/profil")}
+              onClick={() => router.push("/profile")}
               className="border-amber-300 text-amber-700 hover:bg-amber-100"
             >
               Lengkapi Profil

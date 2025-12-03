@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -15,25 +14,25 @@ interface EventData {
   tanggal: Date | null;
   jamMulai: Date | null;
   jamSelesai: Date | null;
+  ruangan?: string | null;
 }
 
 interface KuSidebarEventProps {
   selectedDate: Date | null;
   events: EventData[];
   userRole: string;
+  onEventClick: (eventId: string) => void;
 }
 
 const COLORS = [
-  "bg-blue-100",
-  "bg-yellow-100",
-  "bg-pink-100",
-  "bg-green-100",
-  "bg-purple-100",
+  "bg-blue-100 border-blue-200",
+  "bg-yellow-100 border-yellow-200",
+  "bg-pink-100 border-pink-200",
+  "bg-green-100 border-green-200",
+  "bg-purple-100 border-purple-200",
 ];
 
-export default function KuSidebarEvent({ selectedDate, events, userRole }: KuSidebarEventProps) {
-  const router = useRouter();
-
+export default function KuSidebarEvent({ selectedDate, events, userRole, onEventClick }: KuSidebarEventProps) {
   const formatTime = (date: Date | null) => {
     if (!date) return "-";
     return format(new Date(date), "HH:mm", { locale: id });
@@ -44,26 +43,46 @@ export default function KuSidebarEvent({ selectedDate, events, userRole }: KuSid
     return format(new Date(date), "dd MMMM yyyy", { locale: id });
   };
 
+  const isToday = (date: Date | null) => {
+    if (!date) return false;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const today = isToday(selectedDate);
+
   return (
     <div className="w-80 space-y-4">
       <div className="rounded-lg bg-white p-4 shadow">
-        <div className="mb-4 flex items-center gap-2 text-gray-600">
-          <Calendar className="h-5 w-5" />
-          <h3 className="font-semibold">
-            {selectedDate ? formatDate(selectedDate) : "Pilih tanggal"}
-          </h3>
+        <div className="mb-4 flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-blue-600" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900">
+              {today ? "Agenda Hari Ini" : "Agenda"}
+            </h3>
+            {selectedDate && (
+              <p className="text-xs text-gray-500">
+                {formatDate(selectedDate)}
+              </p>
+            )}
+          </div>
         </div>
 
         {!selectedDate && (
           <p className="text-sm text-gray-500">
-            Klik pada tanggal di kalender untuk melihat jadwal
+            Memuat agenda hari ini...
           </p>
         )}
 
         {selectedDate && events.length === 0 && (
-          <p className="text-sm text-gray-500">
-            Tidak ada jadwal pada tanggal ini
-          </p>
+          <div className="text-center py-8">
+            <div className="mb-3 text-gray-300">
+              <Calendar className="h-12 w-12 mx-auto" />
+            </div>
+            <p className="text-sm text-gray-500">
+              {today ? "Tidak ada agenda hari ini" : "Tidak ada jadwal pada tanggal ini"}
+            </p>
+          </div>
         )}
 
         {selectedDate && events.length > 0 && (
@@ -80,7 +99,7 @@ export default function KuSidebarEvent({ selectedDate, events, userRole }: KuSid
               return (
                 <div
                   key={event.id}
-                  onClick={() => router.push(`/detail-jadwal/${event.id}`)}
+                  onClick={() => onEventClick(event.id)}
                   className={`
                     cursor-pointer rounded-lg border p-3 transition
                     hover:shadow-md ${COLORS[index % COLORS.length]}
@@ -114,9 +133,11 @@ export default function KuSidebarEvent({ selectedDate, events, userRole }: KuSid
                     {title}
                   </div>
                   
-                  <div className="mt-2 text-xs text-gray-500">
-                    {formatDate(event.tanggal)}
-                  </div>
+                  {event.ruangan && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Ruangan {event.ruangan}
+                    </div>
+                  )}
                 </div>
               );
             })}
