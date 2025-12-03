@@ -26,14 +26,8 @@ export default function KuEvent({ event, colorIndex }: KuEventProps) {
   const router = useRouter();
   const colorClass = COLORS[colorIndex % COLORS.length];
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    router.push(`/detail-jadwal/${event.id}`);
-  };
-
   return (
     <div
-      onClick={handleClick}
       className={`
         cursor-pointer rounded border px-2 py-1 text-xs font-medium
         transition hover:shadow-sm ${colorClass}

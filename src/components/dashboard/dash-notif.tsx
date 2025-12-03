@@ -50,8 +50,8 @@ export function StatusNotification({ notifications }: StatusNotificationProps) {
         </div>
         <p className="text-sm text-gray-500">Hari Ini</p>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto">
-        <div className="space-y-3 pr-2">
+      <CardContent className="flex-1 overflow-y-auto pr-2">
+        <div className="space-y-3">
           {!hasNotifications ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Bell className="h-12 w-12 text-gray-300 mb-3" />

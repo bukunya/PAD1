@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format, addHours } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { MahasiswaDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
 import BAModal from "@/components/berita-acara/ba-modal";
 
@@ -30,10 +31,10 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
 
   if (loading) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="animate-pulse space-y-4">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="animate-pulse p-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-lg border p-4">
+            <div key={i} className="mb-4 rounded-lg border p-4">
               <div className="space-y-2">
                 <div className="h-4 w-2/3 rounded bg-gray-200" />
                 <div className="h-3 w-1/3 rounded bg-gray-200" />
@@ -47,87 +48,114 @@ export default function DJMhsTable({ data, loading }: DJMhsTableProps) {
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg bg-white p-12 text-center shadow">
-        <p className="text-gray-500">Tidak ada jadwal ujian Anda saat ini</p>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full">
+          <thead className="border-b bg-blue-50">
+            <tr>
+              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                No
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Judul Tugas Akhir
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Tanggal Ujian
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Jam Ujian
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Ruangan Ujian
+              </th>
+              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                Aksi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            <tr>
+              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                Tidak ada jadwal ujian Anda saat ini
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   }
 
   return (
     <>
-      <div className="space-y-4">
-        {/* Table Header */}
-        <div className="rounded-t-lg bg-blue-50 p-4">
-          <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
-            <div className="col-span-1 text-center">No</div>
-            <div className="col-span-3">Judul Tugas Akhir</div>
-            <div className="col-span-2">Tanggal Ujian</div>
-            <div className="col-span-2">Jam Ujian</div>
-            <div className="col-span-3">Ruangan Ujian</div>
-            <div className="col-span-1 text-center">Aksi</div>
-          </div>
-        </div>
-
-        {/* Table Rows */}
-        <div className="space-y-2">
-          {data.map((item, idx) => (
-            <div
-              key={item.id}
-              className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-            >
-              <div className="grid grid-cols-12 gap-4">
-                {/* No */}
-                <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-900">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full">
+          <thead className="border-b bg-blue-50">
+            <tr>
+              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                No
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Judul Tugas Akhir
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Tanggal Ujian
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Jam Ujian
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Ruangan Ujian
+              </th>
+              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                Aksi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {data.map((item, idx) => (
+              <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                <td className="px-6 py-4 text-center">
+                  <span className="font-medium text-gray-900">
                     {idx + 1}
                   </span>
-                </div>
+                </td>
 
-                {/* Judul TA */}
-                <div className="col-span-3 flex items-center">
-                  <span className="text-sm text-gray-900 line-clamp-2">
+                <td className="px-6 py-4">
+                  <span className="text-sm text-gray-700 line-clamp-2">
                     {item.judul || "-"}
                   </span>
-                </div>
+                </td>
 
-                {/* Tanggal */}
-                <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-gray-900">
-                    {formatDate(item.tanggal)}
-                  </span>
-                </div>
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {formatDate(item.tanggal)}
+                </td>
 
-                {/* Jam */}
-                <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-gray-900">
-                    {formatTime(item.jamMulai, item.jamSelesai)}
-                  </span>
-                </div>
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {formatTime(item.jamMulai, item.jamSelesai)}
+                </td>
 
-                {/* Ruangan */}
-                <div className="col-span-3 flex items-center">
-                  <span className="text-sm text-gray-900">
-                    {item.ruangan || "-"}
-                  </span>
-                </div>
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {item.ruangan || "-"}
+                </td>
 
-                {/* Aksi */}
-                <div className="col-span-1 flex items-center justify-center">
-                  <button
-                    onClick={() => setSelectedUjianId(item.id)}
-                    className="rounded-lg bg-blue-500 p-2 text-white transition hover:bg-blue-600"
-                    title="Lihat Detail"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedUjianId(item.id)}
+                      className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                      title="Lihat Detail"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Modal Berita Acara */}
       {selectedUjianId && (
         <BAModal
           ujianId={selectedUjianId}

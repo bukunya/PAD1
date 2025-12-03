@@ -1,126 +1,105 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Filter } from "lucide-react";
+import { Search, X } from "lucide-react";
 import DpTable from "./rnl-table";
 import { getAdminJadwal, type AdminJadwalData } from "@/lib/actions/detailJadwal/adminJadwal";
 
 export default function DaftarPenjadwalanClient() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AdminJadwalData[]>([]);
   const [filteredData, setFilteredData] = useState<AdminJadwalData[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  
-  // Filters
+  const ITEMS_PER_PAGE = 10;
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProdi, setSelectedProdi] = useState<string>("all");
-  const [selectedAngkatan, setSelectedAngkatan] = useState<string>("all");
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
 
-  const itemsPerPage = 10;
-
-  // Fetch initial data
   useEffect(() => {
     fetchData();
   }, []);
-
-  // Apply filters
-  useEffect(() => {
-    applyFilters();
-  }, [data, searchQuery, selectedProdi, selectedAngkatan, selectedMonth, currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const result = await getAdminJadwal();
-      if (result.success && result.data) {
-        setData(result.data);
-      } else {
-        setData([]);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
+      setData(result.success && result.data ? result.data : []);
+    } catch {
       setData([]);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  const applyFilters = () => {
+  // Apply filters
+  useEffect(() => {
     let filtered = [...data];
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        item =>
-          item.namaMahasiswa?.toLowerCase().includes(query) ||
-          item.nim?.toLowerCase().includes(query)
+        (item) =>
+          item.namaMahasiswa?.toLowerCase().includes(q) ||
+          item.nim?.toLowerCase().includes(q) ||
+          item.judulTugasAkhir?.toLowerCase().includes(q)
       );
     }
 
-    // Prodi filter
-    if (selectedProdi !== "all") {
-      filtered = filtered.filter(item => item.prodi === selectedProdi);
-    }
+    setFilteredData(filtered);
+    setCurrentPage(1); // Reset ke halaman 1 setiap filter berubah
+  }, [data, searchQuery]);
 
-    // Angkatan filter
-    if (selectedAngkatan !== "all") {
-      filtered = filtered.filter(item => item.angkatan === selectedAngkatan);
-    }
+  // Pagination
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-    // Month filter
-    if (selectedMonth !== "all") {
-      filtered = filtered.filter(item => {
-        if (!item.tanggal) return false;
-        const month = new Date(item.tanggal).getMonth();
-        return month === parseInt(selectedMonth);
-      });
-    }
-
-    // Pagination
-    const total = Math.ceil(filtered.length / itemsPerPage);
-    setTotalPages(total);
-    
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setFilteredData(filtered.slice(startIndex, endIndex));
-  };
-
-  // Get unique values for filters
-  const uniqueProdi = Array.from(new Set(data.map(item => item.prodi).filter(Boolean)));
-  const uniqueAngkatan = Array.from(new Set(data.map(item => item.angkatan).filter(Boolean))).sort().reverse();
-
-  const months = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-  ];
+  const clearSearch = () => setSearchQuery("");
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Riwayat dan Laporan</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Riwayat dan Laporan</h1>
+
+        {/* Search Bar */}
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari nama, NIM, atau judul TA..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-10 text-sm focus:ring-2 focus:ring-blue-500/20"
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <button
-            // onClick={() => router.push("/kalender-utama")}
-            className="rounded-lg bg-blue-500 px-2 py-2 text-white transition hover:bg-blue-600">
-            Save Report
-          </button>
       </div>
 
+      {/* Empty Search Result */}
+      {!loading && searchQuery && filteredData.length === 0 && (
+        <div className="rounded-md border p-8 text-center">
+          <p className="text-gray-500">Tidak ada hasil ditemukan</p>
+        </div>
+      )}
+
       {/* Table */}
-      <DpTable
-        data={filteredData}
-        loading={loading}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {(!searchQuery || filteredData.length > 0) && (
+        <DpTable
+          data={paginatedData}
+          loading={loading}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }

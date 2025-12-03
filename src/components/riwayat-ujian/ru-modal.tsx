@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { prisma } from "@/lib/prisma";
 
 interface DetailUjianModalProps {
   ujianId: string;

@@ -37,9 +37,6 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
   );
   const pengajuanList = pengajuanData?.data || [];
 
-  // Display all pengajuan with scroll
-  const displayData = pengajuanList;
-
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("id-ID", {
       day: "2-digit",
@@ -99,8 +96,8 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
             </Link>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-auto">
-          <div className="overflow-x-auto">
+        <CardContent className="flex-1 overflow-y-auto pr-2">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="w-full">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b bg-blue-50">
@@ -122,7 +119,7 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
                 </tr>
               </thead>
               <tbody>
-                {displayData.length === 0 ? (
+                {pengajuanList.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
@@ -132,7 +129,7 @@ export function PengajuanSection({ pengajuanData }: PengajuanSectionProps) {
                     </td>
                   </tr>
                 ) : (
-                  displayData.map((item: PengajuanItem) => (
+                  pengajuanList.map((item: PengajuanItem) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">

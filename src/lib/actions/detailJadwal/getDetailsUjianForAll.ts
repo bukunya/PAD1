@@ -157,7 +157,7 @@ export async function detailJadwal(filters?: FilterOptions) {
         jamSelesai: item.jamSelesai ?? null,
         ruangan: item.ruangan?.nama || null,
         prodi: item.mahasiswa?.prodi || null,
-        angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
+        angkatan: item.mahasiswa?.nim?.substring(0, 2) || null,
         dosenPembimbing: item.dosenPembimbing?.name || null,
         dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name ?? ""),
       }));
@@ -204,7 +204,7 @@ export async function detailJadwal(filters?: FilterOptions) {
         ruangan: item.ruangan?.nama || null,
         isDosenPembimbing: item.dosenPembimbingId === userId,
         prodi: item.mahasiswa?.prodi || null,
-        angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
+        angkatan: item.mahasiswa?.nim?.substring(0, 2) || null,
       }));
     } else if (role === "MAHASISWA") {
       /* ======================
@@ -391,7 +391,7 @@ export async function getAdminJadwal(filters?: FilterOptions) {
       jamSelesai: item.jamSelesai ?? null,
       ruangan: item.ruangan?.nama || null,
       prodi: item.mahasiswa?.prodi || null,
-      angkatan: item.mahasiswa?.nim?.substring(0, 4) || null,
+      angkatan: item.mahasiswa?.nim?.substring(0, 2) || null,
       dosenPembimbing: item.dosenPembimbing?.name || null,
       dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name ?? ""),
     }));
