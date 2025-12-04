@@ -1,6 +1,5 @@
-// src/app/(auth)/dashboard/page.tsx
-import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import DashboardClient from "@/components/dashboard/dashboard-client";
 import { dashboardTop } from "@/lib/actions/dashboard/dashboardTop";
 import { dashBottom } from "@/lib/actions/dashboard/dashBottom";
@@ -76,12 +75,12 @@ export default async function DashboardPage() {
     ? bottomResult
     : { data: [], error: bottomResult.error };
 
-  // **LIMIT NOTIFIKASI 4 ITEM**
+  // **LIMIT NOTIFIKASI 7 ITEM**
   const notifications =
     notifResult?.success && Array.isArray(notifResult.data)
       ? {
           ...notifResult,
-          data: notifResult.data.slice(0, 7), // LIMIT hanya 4 notifikasi
+          data: notifResult.data.slice(0, 7),
         }
       : { data: [] };
 

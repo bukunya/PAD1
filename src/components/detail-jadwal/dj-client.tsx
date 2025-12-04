@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { detailJadwal, type DosenDJ, type MahasiswaDJ, type AdminDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
 import DJAdminTable from "./dj-admintable";
 import DJDosenTable from "./dj-dosentable";
@@ -17,7 +17,7 @@ export default function DJClient({ role }: DJClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchData = async (page: number) => {
+  const fetchData = useCallback(async (page: number) => {
     setLoading(true);
     setError(null);
 
@@ -39,11 +39,11 @@ export default function DJClient({ role }: DJClientProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [role]);
 
   useEffect(() => {
     fetchData(currentPage);
-  }, [currentPage]);
+  }, [currentPage, fetchData]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

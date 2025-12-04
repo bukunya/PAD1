@@ -44,6 +44,8 @@ export interface AdminDJ {
   prodi: string | null;
   angkatan: string | null;
   dosenPembimbing: string | null;
+  pembimbing1: string | null;
+  pembimbing2: string | null;
   dosenPenguji: string[];
 }
 
@@ -129,7 +131,15 @@ export async function detailJadwal(filters?: FilterOptions) {
         select: {
           id: true,
           mahasiswa: {
-            select: { name: true, nim: true, image: true, prodi: true },
+            select: { 
+              name: true, 
+              nim: true, 
+              image: true, 
+              prodi: true,
+              dosenPembimbing: {
+                select: { name: true }
+              }
+            },
           },
           judul: true,
           tanggalUjian: true,
@@ -159,6 +169,8 @@ export async function detailJadwal(filters?: FilterOptions) {
         prodi: item.mahasiswa?.prodi || null,
         angkatan: item.mahasiswa?.nim?.substring(0, 2) || null,
         dosenPembimbing: item.dosenPembimbing?.name || null,
+        pembimbing1: item.dosenPembimbing?.name || null,
+        pembimbing2: item.mahasiswa?.dosenPembimbing?.name || null,
         dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name ?? ""),
       }));
     } else if (role === "DOSEN") {
@@ -363,7 +375,15 @@ export async function getAdminJadwal(filters?: FilterOptions) {
       select: {
         id: true,
         mahasiswa: {
-          select: { name: true, nim: true, image: true, prodi: true },
+          select: { 
+            name: true, 
+            nim: true, 
+            image: true, 
+            prodi: true,
+            dosenPembimbing: {
+              select: { name: true }
+            }
+          },
         },
         judul: true,
         tanggalUjian: true,
@@ -393,6 +413,8 @@ export async function getAdminJadwal(filters?: FilterOptions) {
       prodi: item.mahasiswa?.prodi || null,
       angkatan: item.mahasiswa?.nim?.substring(0, 2) || null,
       dosenPembimbing: item.dosenPembimbing?.name || null,
+      pembimbing1: item.dosenPembimbing?.name || null,
+      pembimbing2: item.mahasiswa?.dosenPembimbing?.name || null,
       dosenPenguji: item.dosenPenguji.map((dp) => dp?.dosen?.name ?? ""),
     }));
 

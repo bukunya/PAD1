@@ -38,7 +38,7 @@ export function TimelineItem({ notification, isLast }: TimelineItemProps) {
         addSuffix: true,
         locale: id,
       });
-    } catch (error) {
+    } catch {
       // Fallback if date-fns fails
       const now = new Date();
       const notifDate = new Date(date);
