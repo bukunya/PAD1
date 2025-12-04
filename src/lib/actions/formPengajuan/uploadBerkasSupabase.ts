@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "../notifikasi/notifications";
@@ -36,6 +36,8 @@ export async function submitBerkas(
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     const fileExtension = file.name.split(".").pop();
     const randomId = generateRandomString(4);
     const fileName = `${randomId}-${Date.now()}.${fileExtension}`;
