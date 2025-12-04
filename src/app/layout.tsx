@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { auth } from "@/lib/auth";
+import NextTopLoader from 'nextjs-toploader';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,12 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NextTopLoader
+          color="#2563eb"
+          height={3}
+          showSpinner={false}
+          shadow="0 0 10px #2563eb,0 0 5px #2563eb"
+        />
         <Providers session={session}>{children}</Providers>
       </body>
     </html>

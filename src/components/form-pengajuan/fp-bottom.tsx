@@ -186,14 +186,14 @@ export default function FpBottom() {
               {/* Jenis Ujian */}
               <div className="space-y-2">
                 <Label htmlFor="judul" className="text-sm font-medium">
-                  Judul Ujian
+                  Judul Tugas Akhir
                 </Label>
                 <Input
                   id="judul"
                   name="judul"
                   type="text"
                   required
-                  placeholder="Masukkan judul ujian"
+                  placeholder="Masukkan Judul Tugas Akhir"
                   className="w-full"
                   disabled={disabledBecauseNoPembimbing}
                 />
