@@ -5,12 +5,22 @@ import { dashboardTop } from "@/lib/actions/dashboard/dashboardTop";
 import { dashBottom } from "@/lib/actions/dashboard/dashBottom";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
 import { prisma } from "@/lib/prisma";
+import { verifyUserRole } from "@/lib/actions/auth/verifyRole";
 
 export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  const validRole = await verifyUserRole(
+    String(session?.user?.id || ""),
+    String(session?.user?.role || "")
+  );
+
+  if (!validRole.valid) {
+    redirect("/api/logout");
   }
 
   const userRole = String(session.user.role || "").toUpperCase();

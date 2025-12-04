@@ -179,9 +179,7 @@ export default function DJAdminTable({
                       <p className="font-medium text-gray-900">
                         {item.namaMahasiswa || "–"}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {item.nim || "–"}
-                      </p>
+                      <p className="text-sm text-gray-500">{item.nim || "–"}</p>
                     </div>
                   </div>
                 </td>
