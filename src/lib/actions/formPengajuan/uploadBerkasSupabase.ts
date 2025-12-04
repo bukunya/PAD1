@@ -29,6 +29,21 @@ export async function submitBerkas(
   if (!file || file.size === 0) {
     return { success: false, message: "Berkas ujian wajib diunggah." };
   }
+
+  if (file.type !== "application/pdf") {
+    return { success: false, message: "Hanya file PDF yang diperbolehkan." };
+  }
+
+  const fileExtension = file.name.split(".").pop()?.toLowerCase();
+  if (!fileExtension || fileExtension !== "pdf") {
+    return { success: false, message: "Hanya file PDF yang diperbolehkan." };
+  }
+
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    return { success: false, message: "Ukuran file maksimal 10MB." };
+  }
+
   if (!judul || !dosenPembimbingId) {
     return {
       success: false,
