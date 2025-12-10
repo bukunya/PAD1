@@ -68,10 +68,6 @@ export default function PengajuanTable({ pengajuan }: PengajuanTableProps) {
         label: "Dijadwalkan",
         className: "bg-green-100 text-green-700",
       },
-      SELESAI: {
-        label: "Selesai",
-        className: "bg-gray-100 text-gray-700",
-      },
     };
 
     const statusInfo = statusMap[status] || {

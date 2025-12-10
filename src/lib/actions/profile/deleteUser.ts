@@ -1,78 +1,80 @@
-"use server";
+// INI ISINYA GENERATED CODE DOANG HEHE
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+// "use server";
 
-export async function deleteUser(userId: string) {
-  try {
-    const session = await auth();
+// import { auth } from "@/lib/auth";
+// import { prisma } from "@/lib/prisma";
+// import { revalidatePath } from "next/cache";
 
-    if (!session?.user?.id || session.user.role !== "ADMIN") {
-      return {
-        success: false,
-        error: "Akses ditolak. Hanya admin yang dapat menghapus user.",
-      };
-    }
+// export async function deleteUser(userId: string) {
+//   try {
+//     const session = await auth();
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-        _count: {
-          select: {
-            ujianMahasiswa: true,
-            ujianDosenPembimbing: true,
-            ujianDosenPenguji: true,
-          },
-        },
-      },
-    });
+//     if (!session?.user?.id || session.user.role !== "ADMIN") {
+//       return {
+//         success: false,
+//         error: "Akses ditolak. Hanya admin yang dapat menghapus user.",
+//       };
+//     }
 
-    if (!user) {
-      return {
-        success: false,
-        error: "User tidak ditemukan",
-      };
-    }
+//     // Check if user exists
+//     const user = await prisma.user.findUnique({
+//       where: { id: userId },
+//       select: {
+//         id: true,
+//         role: true,
+//         _count: {
+//           select: {
+//             ujianMahasiswa: true,
+//             ujianDosenPembimbing: true,
+//             ujianDosenPenguji: true,
+//           },
+//         },
+//       },
+//     });
 
-    // Check if user has related data
-    const hasRelatedData =
-      user._count.ujianMahasiswa > 0 ||
-      user._count.ujianDosenPembimbing > 0 ||
-      user._count.ujianDosenPenguji > 0;
+//     if (!user) {
+//       return {
+//         success: false,
+//         error: "User tidak ditemukan",
+//       };
+//     }
 
-    if (hasRelatedData) {
-      return {
-        success: false,
-        error:
-          "User tidak dapat dihapus karena memiliki data ujian terkait. Silakan hapus data ujian terlebih dahulu.",
-      };
-    }
+//     // Check if user has related data
+//     const hasRelatedData =
+//       user._count.ujianMahasiswa > 0 ||
+//       user._count.ujianDosenPembimbing > 0 ||
+//       user._count.ujianDosenPenguji > 0;
 
-    // Delete user
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+//     if (hasRelatedData) {
+//       return {
+//         success: false,
+//         error:
+//           "User tidak dapat dihapus karena memiliki data ujian terkait. Silakan hapus data ujian terlebih dahulu.",
+//       };
+//     }
 
-    // Revalidate pages
-    if (user.role === "MAHASISWA") {
-      revalidatePath("/data-mahasiswa");
-    } else if (user.role === "DOSEN") {
-      revalidatePath("/data-dosen");
-    }
+//     // Delete user
+//     await prisma.user.delete({
+//       where: { id: userId },
+//     });
 
-    return {
-      success: true,
-      message: "User berhasil dihapus",
-    };
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    return {
-      success: false,
-      error: "Terjadi kesalahan saat menghapus user",
-    };
-  }
-}
+//     // Revalidate pages
+//     if (user.role === "MAHASISWA") {
+//       revalidatePath("/data-mahasiswa");
+//     } else if (user.role === "DOSEN") {
+//       revalidatePath("/data-dosen");
+//     }
+
+//     return {
+//       success: true,
+//       message: "User berhasil dihapus",
+//     };
+//   } catch (error) {
+//     console.error("Error deleting user:", error);
+//     return {
+//       success: false,
+//       error: "Terjadi kesalahan saat menghapus user",
+//     };
+//   }
+// }

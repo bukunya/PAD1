@@ -7,6 +7,10 @@ import { getNotifications } from "@/lib/actions/notifikasi/notifications";
 import { prisma } from "@/lib/prisma";
 import { verifyUserRole } from "@/lib/actions/auth/verifyRole";
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -61,6 +65,7 @@ export default async function DashboardPage() {
         orderBy: {
           createdAt: "desc",
         },
+        take: 10, // Limit untuk performance
       });
 
       pengajuanData = { success: true, data: pengajuanList };
@@ -85,7 +90,7 @@ export default async function DashboardPage() {
     ? bottomResult
     : { data: [], error: bottomResult.error };
 
-  // **LIMIT NOTIFIKASI 7 ITEM**
+  // Limit notifikasi 7 item
   const notifications =
     notifResult?.success && Array.isArray(notifResult.data)
       ? {

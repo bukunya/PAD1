@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import FpTop from "@/components/form-pengajuan/fp-top";
-import FpBottom from "@/components/form-pengajuan/fp-bottom";
+import { DataProfile } from "@/lib/actions/formPengajuan/dataProfile";
+import FpClient from "@/components/form-pengajuan/fp-client";
 
 export default async function FormPengajuanPage() {
   const session = await auth();
@@ -22,6 +22,9 @@ export default async function FormPengajuanPage() {
     );
   }
 
+  // Fetch profile data di server
+  const profileData = await DataProfile();
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -31,11 +34,8 @@ export default async function FormPengajuanPage() {
         </p>
       </div>
 
-      {/* Data Mahasiswa Section */}
-      <FpTop />
-
       {/* Upload Berkas Section */}
-      <FpBottom />
+      <FpClient profile={profileData} />
     </div>
   );
 }
