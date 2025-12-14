@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/pagination";
 import { Search } from "lucide-react";
 import { useState, useMemo } from "react";
+import { PageHeader } from "@/components/page-header";
 
 interface DosenData {
   id: string;
@@ -94,12 +95,10 @@ export function DosenClient({ dosen }: DosenClientProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Data Dosen</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Kelola data dosen dan informasi departemen
-          </p>
-        </div>
+        <PageHeader
+          title="Data Dosen"
+          description="Kelola informasi dosen pembimbing dan penguji"
+        />
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <Input

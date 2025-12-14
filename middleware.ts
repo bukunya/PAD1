@@ -1,50 +1,63 @@
 // middleware.ts
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function middleware(req: NextRequest) {
-  const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  // bypass auth routes and next internals
-  if (
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/static") ||
-    pathname === "/favicon.ico"
-  ) {
-    return NextResponse.next();
+  console.log("🔐 MIDDLEWARE:", pathname);
+
+  // Check if user has session token
+  const sessionToken = 
+    request.cookies.get("authjs.session-token")?.value ||
+    request.cookies.get("__Secure-authjs.session-token")?.value;
+
+  const hasSession = !!sessionToken;
+
+  console.log("👤 Has session:", hasSession);
+
+  // AUTH routes (login, register)
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+
+  // PROTECTED routes
+  const isProtectedRoute = pathname.startsWith("/dashboard");
+
+  // RULE 1: Punya session + akses /login = redirect dashboard
+  if (hasSession && isAuthRoute) {
+    console.log("✅ Has session → redirect /dashboard");
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // read token (edge safe)
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  });
-
-  const isLoggedIn = !!token;
-  const isLoginPage = pathname === "/login";
-
-  // root redirect
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL(isLoggedIn ? "/dashboard" : "/login", req.url));
+  // RULE 2: Ga punya session + akses /dashboard = redirect login
+  if (!hasSession && isProtectedRoute) {
+    console.log("❌ No session → redirect /login");
+    
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    
+    const response = NextResponse.redirect(loginUrl);
+    
+    // No-cache headers
+    response.headers.set("Cache-Control", "no-store, must-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    
+    return response;
   }
 
-  // already logged in -> cannot access login
-  if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // not logged in -> protected
-  if (!isLoggedIn && !isLoginPage) {
-    const callbackUrl = encodeURIComponent(pathname + nextUrl.search);
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
-  }
-
+  console.log("✅ Access allowed");
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next|_next/static|_next/image|api/auth|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Match all paths except:
+     * - api routes (handled separately)
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - public files
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

@@ -3,6 +3,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DosenClient } from "@/components/data-dosen/dd-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Data Dosen",
+  description: "Lihat dan kelola data dosen pembimbing",
+};
+
 export default async function DataDosenPage() {
   const session = await auth();
 

@@ -4,6 +4,11 @@ import { statistikMahasiswa } from "@/lib/actions/statistikDataMhsDsn/statistikM
 import { getDosenName } from "@/lib/actions/profile/getDosenName";
 import { MahasiswaClient } from "@/components/data-mahasiswa/dm-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Data Mahasiswa",
+  description: "Lihat dan kelola data mahasiswa",
+};
+
 export default async function DataMahasiswaPage() {
   const session = await auth();
 

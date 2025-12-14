@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { getUjianDetailsForAll } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
+import { getUjianDetailsForAll } from "@/lib/actions/detailJadwal/detailJadwal";
 
 interface BAModalProps {
   ujianId: string;

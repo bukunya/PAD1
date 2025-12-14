@@ -13,6 +13,7 @@ import {
 import { Bell, Calendar, Loader2 } from "lucide-react";
 import { TimelineItem } from "./rp-timelineItem";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
+import { PageHeader } from "@/components/page-header";
 
 interface Notification {
   id: string;
@@ -51,12 +52,37 @@ export function RiwayatPengajuanClient({
   const [currentPage, setCurrentPage] = useState(initialPagination?.page || 1);
   const [hasMore, setHasMore] = useState(initialPagination?.hasMore || false);
 
-  // Dynamic page title based on role
-  const pageTitle = userRole === "DOSEN" ? "Notifikasi" : "Riwayat Pengajuan";
+  // Dynamic page configuration based on role
+  const getPageConfig = () => {
+    switch (userRole) {
+      case "MAHASISWA":
+        return {
+          title: "Riwayat Pengajuan",
+          description: "Pantau status dan riwayat pengajuan sidang tugas akhir Anda",
+          emptyTitle: "Belum ada riwayat pengajuan",
+          emptySubtitle: "Notifikasi akan muncul setelah Anda mengajukan ujian",
+        };
+      case "DOSEN":
+        return {
+          title: "Notifikasi",
+          description: "Lihat notifikasi pengajuan ujian dari mahasiswa yang Anda bimbing/uji",
+          emptyTitle: "Belum ada notifikasi ujian",
+          emptySubtitle: "Notifikasi akan muncul ketika ada mahasiswa yang mengajukan ujian",
+        };
+      default:
+        return {
+          title: "Notifikasi",
+          description: "Lihat semua notifikasi terkait pengajuan sidang",
+          emptyTitle: "Belum ada notifikasi",
+          emptySubtitle: "Notifikasi akan muncul di sini",
+        };
+    }
+  };
+
+  const pageConfig = getPageConfig();
 
   // Filter notifications
   const filteredNotifications = notifications.filter((notif) => {
-    // Apply status filter
     if (selectedFilter !== "all") {
       const message = notif.message.toLowerCase();
       let matchesFilter = false;
@@ -107,58 +133,30 @@ export function RiwayatPengajuanClient({
     }
   };
 
-  // Dynamic empty state message based on role
-  const getEmptyStateMessage = () => {
-    switch (userRole) {
-      case "MAHASISWA":
-        return {
-          title: "Belum ada riwayat pengajuan",
-          subtitle: "Notifikasi akan muncul setelah Anda mengajukan ujian",
-        };
-      case "DOSEN":
-        return {
-          title: "Belum ada notifikasi ujian",
-          subtitle:
-            "Notifikasi akan muncul ketika ada mahasiswa yang mengajukan ujian",
-        };
-      case "ADMIN":
-        return {
-          title: "Belum ada notifikasi pengajuan",
-          subtitle: "Notifikasi akan muncul ketika ada pengajuan baru",
-        };
-      default:
-        return {
-          title: "Belum ada notifikasi",
-          subtitle: "Notifikasi akan muncul di sini",
-        };
-    }
-  };
-
-  const emptyState = getEmptyStateMessage();
-
   return (
     <div className="space-y-6 p-6">
-      {/* Header with Title and Filter */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
-
-        {/* Filter Control */}
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Semua Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="submitted">Diajukan</SelectItem>
-              <SelectItem value="verified">Diverifikasi</SelectItem>
-              <SelectItem value="scheduled">Dijadwalkan</SelectItem>
-              <SelectItem value="rejected">Ditolak</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {/* Page Header with Role-based Title & Description */}
+      <PageHeader
+        title={pageConfig.title}
+        description={pageConfig.description}
+        action={
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="submitted">Diajukan</SelectItem>
+                <SelectItem value="verified">Diverifikasi</SelectItem>
+                <SelectItem value="scheduled">Dijadwalkan</SelectItem>
+                <SelectItem value="rejected">Ditolak</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
       {/* Content Card */}
       <Card className="border-none shadow-sm">
@@ -167,10 +165,10 @@ export function RiwayatPengajuanClient({
             <div className="text-center py-12">
               <Bell className="h-16 w-16 mx-auto mb-4 text-gray-300" />
               <p className="text-muted-foreground text-lg mb-2">
-                {emptyState.title}
+                {pageConfig.emptyTitle}
               </p>
               <p className="text-sm text-muted-foreground">
-                {emptyState.subtitle}
+                {pageConfig.emptySubtitle}
               </p>
             </div>
           ) : (

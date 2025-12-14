@@ -2,6 +2,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import DaftarPenjadwalanClient from "@/components/riwayat-dan-laporan/rnl-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Riwayat dan Laporan",
+  description: "Lihat riwayat penjadwalan dan laporan ujian tugas akhir",
+};
+
 export default async function RiwayatDanLaporanPage() {
   const session = await auth();
 

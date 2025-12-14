@@ -23,29 +23,43 @@ export function NavProjects({
   const pathname = usePathname();
 
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarMenu className="mt-2">
+    <SidebarGroup>
+      <SidebarMenu className="mt-2 group-data-[collapsible=icon]:space-y-3">
         {projects.map((item) => {
           const isActive = pathname === item.url;
           return (
             <SidebarMenuItem key={item.name}>
               <SidebarMenuButton
                 asChild
-                className={`h-12 ${
+                className={`h-12 transition-all
+                group-data-[collapsible=icon]:h-11
+                group-data-[collapsible=icon]:w-11
+                group-data-[collapsible=icon]:p-0
+                group-data-[collapsible=icon]:mx-auto
+                group-data-[collapsible=icon]:flex
+                group-data-[collapsible=icon]:items-center
+                group-data-[collapsible=icon]:justify-center
+                group-data-[collapsible=icon]:border-0
+                group-data-[collapsible=icon]:rounded-md
+                ${
                   isActive
-                    ? "text-blue-500 font-semibold border-l-4 border-blue-500 pl-4 rounded-l-none"
-                    : "hover:text-blue-600"
+                    ? "text-blue-500 font-semibold border-l-4 border-blue-500 pl-4 rounded-l-none group-data-[collapsible=icon]:bg-blue-50 group-data-[collapsible=icon]:border-blue-500"
+                    : "hover:text-blue-600 group-data-[collapsible=icon]:hover:bg-accent"
                 }`}
               >
-                <a href={item.url}>
+                <a href={item.url} className="flex items-center gap-3 w-full">
                   <item.icon
-                    className={
+                    className={[
+                      "shrink-0 transition-all",
+                      "group-data-[collapsible=icon]:size-5",
                       isActive
-                        ? "text-blue-500 hover:text-blue-600"
-                        : "hover:text-blue-600"
-                    }
+                        ? "text-blue-500"
+                        : "text-muted-foreground hover:text-blue-600",
+                    ].join(" ")}
                   />
-                  <span className="font-medium">{item.name}</span>
+                  <span className="font-medium group-data-[collapsible=icon]:hidden">
+                    {item.name}
+                  </span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

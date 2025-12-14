@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
@@ -21,6 +19,11 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Bell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Notifikasi",
+  description: "Notifikasi terkait jadwal ujian tugas akhir",
+};
 
 interface Notification {
   id: string;

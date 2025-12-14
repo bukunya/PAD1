@@ -1,6 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import DJClient from "@/components/detail-jadwal/dj-client";
+import { PageHeader } from "@/components/page-header";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Detail Jadwal",
+  description: "Lihat detail jadwal ujian tugas akhir",
+};
 
 export default async function DetailJadwalPage() {
   const session = await auth();
@@ -28,16 +34,19 @@ export default async function DetailJadwalPage() {
     );
   }
 
+  // Helper function untuk conditional description
+  const getDescription = (userRole: string) => {
+    return userRole === "MAHASISWA" 
+      ? "Lihat jadwal ujian tugas akhir Anda" 
+      : "Lihat jadwal ujian mahasiswa yang Anda bimbing/uji";
+  };
+
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Detail Jadwal</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          {role === "MAHASISWA" 
-            ? "Lihat jadwal ujian tugas akhir Anda" 
-            : "Lihat jadwal ujian mahasiswa yang Anda bimbing/uji"}
-        </p>
-      </div>
+      <PageHeader
+        title="Detail Jadwal"
+        description={getDescription(role)}
+      />
       
       <DJClient role={role} />
     </div>

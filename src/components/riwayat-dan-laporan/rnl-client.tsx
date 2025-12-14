@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import DpTable from "./rnl-table";
-import { getAdminJadwal, type AdminJadwalData } from "@/lib/actions/detailJadwal/adminJadwal";
+import { getAdminJadwal, AdminDJ } from "@/lib/actions/detailJadwal/detailJadwal";
+import { PageHeader } from "@/components/page-header";
 
 export default function DaftarPenjadwalanClient() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<AdminJadwalData[]>([]);
-  const [filteredData, setFilteredData] = useState<AdminJadwalData[]>([]);
+  const [data, setData] = useState<AdminDJ[]>([]);
+  const [filteredData, setFilteredData] = useState<AdminDJ[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -60,7 +61,10 @@ export default function DaftarPenjadwalanClient() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Riwayat dan Laporan</h1>
+        <PageHeader
+          title="Riwayat dan Laporan Penjadwalan"
+          description="Kelola dan tinjau riwayat penjadwalan ujian tugas akhir mahasiswa"
+        />
 
         {/* Search Bar */}
         <div className="relative w-full sm:max-w-md">

@@ -1,11 +1,19 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { riwayatUjian } from "@/lib/actions/riwayatUjian/riwayatUjian";
-import { RiwayatUjianClient } from "@/components/riwayat-ujian/ru-client";
+import { RiwayatUjianClient, RiwayatUjianFilters } from "@/components/riwayat-ujian/ru-client";
+import { PageHeader } from "@/components/page-header";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Riwayat Ujian",
+  description: "Tinjau riwayat ujian tugas akhir mahasiswa",
+};
 
 interface PageProps {
   searchParams: Promise<{
     page?: string;
+    status?: "semua" | "selesai" | "dijadwalkan";
+    peran?: "semua" | "pembimbing" | "penguji";
   }>;
 }
 
@@ -41,19 +49,21 @@ export default async function RiwayatUjianPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const page = Number(params.page) || 1;
+  const statusFilter = params.status || "semua";
+  const peranFilter = params.peran || "semua";
 
-  // Fetch riwayat ujian data
+  // Fetch riwayat ujian data dengan filter
   const result = await riwayatUjian({
     page,
     limit: 10,
+    status: statusFilter,
+    peran: peranFilter,
   });
 
   if (!result.success || !result.data || !result.pagination) {
     return (
       <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Riwayat Ujian</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Riwayat Ujian</h1>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="text-red-700">{result.error || "Gagal memuat data"}</p>
         </div>
@@ -75,13 +85,17 @@ export default async function RiwayatUjianPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Riwayat Ujian</h1>
-      </div>
+      <PageHeader
+        title="Riwayat Ujian"
+        description="Tinjau riwayat ujian tugas akhir mahasiswa"
+        action={<RiwayatUjianFilters statusFilter={statusFilter} peranFilter={peranFilter} />}
+      />
 
       <RiwayatUjianClient
         data={ujianData}
         pagination={result.pagination}
+        statusFilter={statusFilter}
+        peranFilter={peranFilter}
       />
     </div>
   );

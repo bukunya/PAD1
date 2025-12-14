@@ -105,35 +105,71 @@ export default function FpBottom() {
     setFileErrorMessage("");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    
-    if (file) {
-      // Validasi tipe file
-      if (file.type !== "application/pdf") {
-        setFileErrorMessage("File yang Anda upload bukan format PDF. Silakan upload file dengan format PDF.");
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  
+  if (file) {
+    // Validasi tipe file
+    if (file.type !== "application/pdf") {
+      setFileErrorMessage("File yang Anda upload bukan format PDF. Silakan upload file dengan format PDF.");
+      setShowFileErrorModal(true);
+      e.target.value = "";
+      setSelectedFile(null);
+      return;
+    }
+
+    // Validasi ukuran file (10MB = 10 * 1024 * 1024 bytes)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+      setFileErrorMessage(
+        `Ukuran file terlalu besar (${fileSizeMB} MB). Maksimal ukuran file adalah 10 MB. Silakan kompres atau pilih file yang lebih kecil.`
+      );
+      setShowFileErrorModal(true);
+      e.target.value = "";
+      setSelectedFile(null);
+      return;
+    }
+
+    // PENTING: Baca file sebagai base64 untuk file > 1MB
+    // Ini menghindari masalah dengan FormData untuk file besar
+    if (file.size > 1 * 1024 * 1024) {
+      try {
+        // Convert to base64 untuk file besar
+        const base64 = await fileToBase64(file);
+        
+        // Create a new File-like object with base64 flag
+        const optimizedFile = new File([file], file.name, { 
+          type: file.type,
+          lastModified: file.lastModified 
+        });
+        
+        // Store both original and base64
+        setSelectedFile(optimizedFile);
+        
+      } catch (error) {
+        console.error("Error processing file:", error);
+        setFileErrorMessage("Gagal memproses file. Silakan coba lagi.");
         setShowFileErrorModal(true);
         e.target.value = "";
         setSelectedFile(null);
         return;
       }
-
-      // Validasi ukuran file (10MB = 10 * 1024 * 1024 bytes)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-        setFileErrorMessage(
-          `Ukuran file terlalu besar (${fileSizeMB} MB). Maksimal ukuran file adalah 10 MB. Silakan kompres atau pilih file yang lebih kecil.`
-        );
-        setShowFileErrorModal(true);
-        e.target.value = "";
-        setSelectedFile(null);
-        return;
-      }
-
+    } else {
       setSelectedFile(file);
     }
-  };
+  }
+};
+
+// Helper function to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
   if (isLoadingProfile) {
     return (

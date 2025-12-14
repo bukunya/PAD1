@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EditMahasiswaModal } from "./dm-editmodal";
 import { DeleteModal } from "../shared/dddm-deletemodal";
-import { deleteUser } from "@/lib/actions/profile/deleteUser";
+// import { deleteUser } from "@/lib/actions/profile/deleteUser";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -56,17 +56,17 @@ export function MahasiswaTable({
     setDeleteModalOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!selectedMahasiswa) return;
+  // const confirmDelete = async () => {
+  //   if (!selectedMahasiswa) return;
 
-    const result = await deleteUser(selectedMahasiswa.id);
-    if (result.success) {
-      toast.success("Data mahasiswa berhasil dihapus");
-      router.refresh();
-    } else {
-      toast.error(result.error || "Gagal menghapus data");
-    }
-  };
+  //   const result = await deleteUser(selectedMahasiswa.id);
+  //   if (result.success) {
+  //     toast.success("Data mahasiswa berhasil dihapus");
+  //     router.refresh();
+  //   } else {
+  //     toast.error(result.error || "Gagal menghapus data");
+  //   }
+  // };
 
   const getProdiLabel = (prodi: string | null) => {
     if (!prodi) return "-";
@@ -269,13 +269,13 @@ export function MahasiswaTable({
         dosenList={dosenList}
       />
 
-      <DeleteModal
+      {/* <DeleteModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
+        // onConfirm={confirmDelete}
         userName={selectedMahasiswa?.name || ""}
         userType="mahasiswa"
-      />
+      /> */}
     </>
   );
 }

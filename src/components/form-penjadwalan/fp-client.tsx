@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "lucide-react";
 import PenjadwalanTable from "./fp-table";
+import { PageHeader } from "@/components/page-header";
 
 interface Pengajuan {
   id: string;
@@ -56,12 +57,10 @@ export default function PenjadwalanClient({
     <div className="space-y-6">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Form Penjadwalan</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Jadwalkan ujian tugas akhir untuk mahasiswa yang sudah diverifikasi
-          </p>
-        </div>
+        <PageHeader
+          title="Form Penjadwalan"
+          description="Kelola penjadwalan ujian tugas akhir mahasiswa yang telah diajukan"
+        />
 
         {/* Filter Bar */}
         <div className="flex items-center gap-2">

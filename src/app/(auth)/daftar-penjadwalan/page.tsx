@@ -1,6 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import DJClient from "@/components/detail-jadwal/dj-client";
+import { PageHeader } from "@/components/page-header";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Daftar Penjadwalan",
+  description: "Lihat semua informasi ujian tugas akhir mahasiswa",
+};
 
 export default async function DaftarPenjadwalanPage() {
   const session = await auth();
@@ -25,12 +31,10 @@ export default async function DaftarPenjadwalanPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Daftar Penjadwalan</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Lihat semua informasi ujian tugas akhir mahasiswa
-        </p>
-      </div>
+      <PageHeader
+        title="Daftar Penjadwalan"
+        description="Lihat semua informasi ujian tugas akhir mahasiswa"
+      />
       
       <DJClient role={role} />
     </div>

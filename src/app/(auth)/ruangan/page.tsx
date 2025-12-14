@@ -2,6 +2,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RuanganClient } from "@/components/ruangan/r-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Manajemen Ruangan",
+  description: "Kelola informasi ruangan untuk ujian tugas akhir",
+};
+
 export default async function RuanganPage() {
   const session = await auth();
 
