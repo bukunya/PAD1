@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { DosenDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
+import type { DosenDJ } from "@/lib/actions/detailJadwal/detailJadwal";
 import BAModal from "@/components/berita-acara/ba-modal";
 import { toZonedTime, format as formatTz } from "date-fns-tz";
 

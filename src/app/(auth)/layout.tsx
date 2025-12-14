@@ -18,12 +18,7 @@ export default function AuthLayout({
   if (!session) {
     return null;
   }
-  const user = {
-    name: session.user?.name || "User",
-    email: session.user?.email || "",
-    avatar: session.user?.image || "",
-  };
-
+  
   return (
     <SidebarProvider>
       <AppSidebar />

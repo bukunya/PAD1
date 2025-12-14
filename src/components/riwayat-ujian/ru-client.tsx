@@ -40,25 +40,10 @@ interface RiwayatUjianClientProps {
 export function RiwayatUjianClient({
   data,
   pagination,
-  statusFilter,
-  peranFilter,
 }: RiwayatUjianClientProps) {
   const handlePageChange = (newPage: number) => {
     const url = new URL(window.location.href);
     url.searchParams.set("page", newPage.toString());
-    window.location.href = url.toString();
-  };
-
-  const handleFilterChange = (filterType: string, value: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("page", "1");
-    
-    if (value === "semua") {
-      url.searchParams.delete(filterType);
-    } else {
-      url.searchParams.set(filterType, value);
-    }
-    
     window.location.href = url.toString();
   };
 

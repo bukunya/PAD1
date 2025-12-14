@@ -5,7 +5,7 @@ import { format, addHours } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { MahasiswaDJ } from "@/lib/actions/detailJadwal/getDetailsUjianForAll";
+import type { MahasiswaDJ } from "@/lib/actions/detailJadwal/detailJadwal";
 import BAModal from "@/components/berita-acara/ba-modal";
 
 interface DJMhsTableProps {

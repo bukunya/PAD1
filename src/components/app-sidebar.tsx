@@ -33,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogoutButton } from "@/components/logout-button";
+import Image from "next/image";
 
 const dashboard = {
   name: "Dashboard",
@@ -219,10 +219,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="p-4 border-b">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white-600 shrink-0">
-            <img 
-              src="/logosimpensi.svg" 
-              alt="SIMPENSI Logo" 
+            <Image
+              src="/logosimpensi.svg"
+              alt="SIMPENSI Logo"
+              width={24}
+              height={24}
               className="h-6 w-6"
+              priority
             />
           </div>
           <div className="flex flex-col min-w-0">

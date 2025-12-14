@@ -134,10 +134,7 @@ export default function FpBottom() {
     // PENTING: Baca file sebagai base64 untuk file > 1MB
     // Ini menghindari masalah dengan FormData untuk file besar
     if (file.size > 1 * 1024 * 1024) {
-      try {
-        // Convert to base64 untuk file besar
-        const base64 = await fileToBase64(file);
-        
+      try {        
         // Create a new File-like object with base64 flag
         const optimizedFile = new File([file], file.name, { 
           type: file.type,
@@ -159,16 +156,6 @@ export default function FpBottom() {
       setSelectedFile(file);
     }
   }
-};
-
-// Helper function to convert file to base64
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
 };
 
   if (isLoadingProfile) {

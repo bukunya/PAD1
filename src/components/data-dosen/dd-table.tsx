@@ -7,8 +7,7 @@ import { useState } from "react";
 import { EditDosenModal } from "./dd-editmodal";
 // import { DeleteModal } from "../shared/dddm-deletemodal"; modal delete
 // import { deleteUser } from "@/lib/actions/profile/deleteUser"; ku nonaktifin karena emang buat fitur hapus dosen belum ada, cuma buat nampilin modal doang
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+// import { useRouter } from "next/navigation";
 
 interface DosenData {
   id: string;
@@ -29,10 +28,9 @@ interface DosenTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export function DosenTable({ dosen }: DosenTableProps) {
-  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [, setDeleteModalOpen] = useState(false);
   const [selectedDosen, setSelectedDosen] = useState<DosenData | null>(null);
 
   const totalPages = Math.ceil(dosen.length / ITEMS_PER_PAGE);

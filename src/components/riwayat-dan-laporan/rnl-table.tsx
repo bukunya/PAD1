@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { AdminDJ, getAdminJadwal } from "@/lib/actions/detailJadwal/detailJadwal";
+import type { AdminDJ } from "@/lib/actions/detailJadwal/detailJadwal";
 
 interface DpTableProps {
   data: AdminDJ[];

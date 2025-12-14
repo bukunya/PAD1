@@ -5,10 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EditMahasiswaModal } from "./dm-editmodal";
-import { DeleteModal } from "../shared/dddm-deletemodal";
+// import { DeleteModal } from "../shared/dddm-deletemodal";
 // import { deleteUser } from "@/lib/actions/profile/deleteUser";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+// import { useRouter } from "next/navigation";
 
 interface MahasiswaData {
   id: string;
@@ -34,10 +33,9 @@ export function MahasiswaTable({
   mahasiswa,
   dosenList,
 }: MahasiswaTableProps) {
-  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [, setDeleteModalOpen] = useState(false);
   const [selectedMahasiswa, setSelectedMahasiswa] =
     useState<MahasiswaData | null>(null);
 
