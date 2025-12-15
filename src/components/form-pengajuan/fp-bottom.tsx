@@ -235,7 +235,7 @@ export default function FpBottom() {
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Informasi dosen pembimbing tidak tersedia. Silakan hubungi admin untuk menentukan dosen pembimbing sebelum melakukan pengajuan.
+                  Informasi dosen pembimbing tidak tersedia. Silakan lengkapi profil untuk menentukan dosen pembimbing sebelum melakukan pengajuan.
                 </AlertDescription>
               </Alert>
             )}

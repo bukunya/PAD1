@@ -81,23 +81,103 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
   };
 
   const validateForm = () => {
+    const errors: string[] = [];
+
+    // Validate required fields
     if (!formData.name.trim()) {
-      setErrorMessage("Nama lengkap wajib diisi");
+      errors.push("Nama: Silakan isi nama lengkap Anda");
+    }
+
+    if (!formData.nim.trim()) {
+      errors.push(`${getIdLabel(user.role)}: Silakan isi ${getIdLabel(user.role)} Anda`);
+    }
+
+    if (!formData.prodi) {
+      errors.push("Program Studi: Silakan pilih program studi yang tersedia");
+    }
+
+    // Validate phone number (required)
+    if (!formData.telepon || !formData.telepon.trim()) {
+      errors.push("Nomor Telepon: Silakan isi nomor telepon Anda");
+    } else {
+      const phoneRegex = /^(\+62|62|0)[8-9][0-9]{7,11}$/;
+      if (!phoneRegex.test(formData.telepon.trim())) {
+        errors.push("Nomor Telepon: Format tidak valid. Gunakan format: 08123456789");
+      }
+    }
+
+    // Validate dosen pembimbing for MAHASISWA
+    if (user.role === "MAHASISWA" && !formData.dosenPembimbingId) {
+      errors.push("Dosen Pembimbing: Silakan pilih dosen pembimbing Anda");
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+      setErrorMessage(errors.join("\n"));
       setShowErrorModal(true);
       return false;
     }
 
-    // Only validate phone if it has value
-    if (formData.telepon && formData.telepon.trim()) {
-      const phoneRegex = /^(\+62|62|0)[8-9][0-9]{7,11}$/;
-      if (!phoneRegex.test(formData.telepon.trim())) {
-        setErrorMessage("Format nomor telepon tidak valid. Contoh: 08123456789");
-        setShowErrorModal(true);
-        return false;
-      }
+    return true;
+  };
+
+  // ✅ Format error messages to be more user-friendly
+  const formatErrorMessage = (result: any): string => {
+    if (result.fieldErrors) {
+      const fieldLabelMap: Record<string, string> = {
+        name: "Nama",
+        nim: getIdLabel(user.role),
+        prodi: "Program Studi",
+        telepon: "Nomor Telepon",
+        dosenPembimbingId: "Dosen Pembimbing",
+      };
+
+      const errors: string[] = [];
+
+      Object.entries(result.fieldErrors).forEach(([field, errorList]) => {
+        const fieldLabel = fieldLabelMap[field] || field;
+        const errorMessages = Array.isArray(errorList) ? errorList : [errorList];
+
+        errorMessages.forEach((err: any) => {
+          const errorText = typeof err === 'string' ? err : String(err);
+          
+          // Format: "Field: Error message"
+          if (field === "name") {
+            if (errorText.includes("kosong") || errorText.includes("Required")) {
+              errors.push(`${fieldLabel}: Silakan isi nama lengkap Anda`);
+            } else if (errorText.includes("panjang")) {
+              errors.push(`${fieldLabel}: Maksimal 100 karakter`);
+            } else {
+              errors.push(`${fieldLabel}: Format tidak valid`);
+            }
+          } else if (field === "nim") {
+            if (errorText.includes("wajib") || errorText.includes("Required") || errorText.includes("min")) {
+              errors.push(`${fieldLabel}: Silakan isi ${fieldLabel} Anda`);
+            } else {
+              errors.push(`${fieldLabel}: Format tidak valid`);
+            }
+          } else if (field === "prodi") {
+            errors.push(`${fieldLabel}: Silakan pilih program studi yang tersedia`);
+          } else if (field === "telepon") {
+            if (errorText.includes("Format nomor telepon tidak valid") || errorText.includes("regex")) {
+              errors.push(`${fieldLabel}: Format tidak valid. Gunakan format: 08123456789`);
+            } else {
+              errors.push(`${fieldLabel}: Format tidak valid`);
+            }
+          } else if (field === "dosenPembimbingId") {
+            errors.push(`${fieldLabel}: Silakan pilih dosen pembimbing Anda`);
+          }
+        });
+      });
+
+      // Return formatted errors or a generic message
+      return errors.length > 0 
+        ? errors.join("\n") 
+        : "Mohon periksa kembali data yang Anda masukkan";
     }
 
-    return true;
+    // Return generic error message
+    return result.error || "Gagal memperbarui profil. Silakan coba lagi.";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,23 +192,16 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
     try {
       const formDataToSend = new FormData();
       
-      // Always append all fields (seperti di referensi)
-      formDataToSend.append("name", formData.name);
+      // Always append name (required)
+      formDataToSend.append("name", formData.name.trim());
       
-      if (formData.nim) {
-        formDataToSend.append("nim", formData.nim);
-      }
+      // Append optional fields - send empty string if not filled
+      formDataToSend.append("nim", formData.nim.trim());
+      formDataToSend.append("prodi", formData.prodi);
+      formDataToSend.append("telepon", formData.telepon.trim());
       
-      if (formData.prodi) {
-        formDataToSend.append("prodi", formData.prodi);
-      }
-      
-      if (formData.telepon) {
-        formDataToSend.append("telepon", formData.telepon);
-      }
-      
-      // Hanya append dosenPembimbingId untuk MAHASISWA
-      if (formData.dosenPembimbingId && user.role === "MAHASISWA") {
+      // Only append dosenPembimbingId for MAHASISWA
+      if (user.role === "MAHASISWA") {
         formDataToSend.append("dosenPembimbingId", formData.dosenPembimbingId);
       }
 
@@ -141,51 +214,14 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
           router.refresh();
         }, 2000);
       } else {
-        // Show more detailed error with human-friendly messages
-        if (result.fieldErrors) {
-          const fieldLabelMap: Record<string, string> = {
-            name: "Nama",
-            nim: "NIM",
-            prodi: "Program Studi",
-            telepon: "Nomor Telepon",
-            dosenPembimbingId: "Dosen Pembimbing",
-          };
-          
-          // Map error messages to human-friendly Indonesian
-          const errorTranslations: Record<string, string> = {
-            "Invalid input": "Format tidak valid",
-            "Required": "Wajib diisi",
-            "Nama tidak boleh kosong": "Nama tidak boleh kosong",
-            "Nama terlalu panjang": "Nama terlalu panjang (maksimal 100 karakter)",
-            "Format nomor telepon tidak valid": "Format nomor telepon tidak valid. Contoh: 08123456789",
-          };
-          
-          const fieldErrorMsg = Object.entries(result.fieldErrors)
-            .map(([field, errors]) => {
-              const fieldLabel = fieldLabelMap[field] || field;
-              const errorMessages = Array.isArray(errors) ? errors : [errors];
-              
-              // Translate each error message with special handling for prodi
-              const translatedErrors = errorMessages.map(err => {
-                // Special case untuk prodi dropdown
-                if (field === "prodi" && (err === "Invalid input" || err === "Required")) {
-                  return "Silakan pilih program studi";
-                }
-                return errorTranslations[err] || err;
-              });
-              
-              return `${fieldLabel}: ${translatedErrors.join(", ")}`;
-            })
-            .join("\n");
-          setErrorMessage(fieldErrorMsg);
-        } else {
-          setErrorMessage(result.error || "Gagal memperbarui profil");
-        }
+        // ✅ Use the improved error formatting
+        const friendlyErrorMessage = formatErrorMessage(result);
+        setErrorMessage(friendlyErrorMessage);
         setShowErrorModal(true);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setErrorMessage("Terjadi kesalahan saat memperbarui profil");
+      setErrorMessage("Terjadi kesalahan saat memperbarui profil. Silakan coba lagi.");
       setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
@@ -194,7 +230,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div onSubmit={handleSubmit} className="space-y-6">
         <Card className="rounded-xl border shadow-sm">
           <CardContent className="space-y-6 p-6">
             <div className="flex items-center justify-between">
@@ -229,7 +265,9 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nim">{getIdLabel(user.role)}</Label>
+                    <Label htmlFor="nim">
+                      {getIdLabel(user.role)} <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="nim"
                       value={formData.nim}
@@ -237,16 +275,20 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                         setFormData({ ...formData, nim: e.target.value })
                       }
                       placeholder={`Masukkan ${getIdLabel(user.role)}`}
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="prodi">Program Studi</Label>
+                    <Label htmlFor="prodi">
+                      Program Studi <span className="text-red-500">*</span>
+                    </Label>
                     <Select
                       value={formData.prodi}
                       onValueChange={(value) =>
                         setFormData({ ...formData, prodi: value })
                       }
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih program studi" />
@@ -289,7 +331,9 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="telepon">No Telepon</Label>
+                    <Label htmlFor="telepon">
+                      No Telepon <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="telepon"
                       value={formData.telepon}
@@ -297,12 +341,15 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                         setFormData({ ...formData, telepon: e.target.value })
                       }
                       placeholder="08123456789"
+                      required
                     />
                   </div>
 
                   {user.role === "MAHASISWA" && (
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="dosenPembimbing">Dosen Pembimbing</Label>
+                      <Label htmlFor="dosenPembimbing">
+                        Dosen Pembimbing <span className="text-red-500">*</span>
+                      </Label>
                       <Select
                         value={formData.dosenPembimbingId}
                         onValueChange={(value) =>
@@ -311,6 +358,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                             dosenPembimbingId: value,
                           })
                         }
+                        required
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih dosen pembimbing" />
@@ -354,6 +402,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
             size="lg"
             disabled={isSubmitting}
             className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleSubmit}
           >
             {isSubmitting ? (
               <>
@@ -368,7 +417,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
             )}
           </Button>
         </div>
-      </form>
+      </div>
 
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="sm:max-w-md">
