@@ -2,9 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { NavUser } from "@/components/nav-user";
 import { useSession } from "next-auth/react";
 
 export default function AuthLayout({
@@ -20,28 +18,23 @@ export default function AuthLayout({
   if (!session) {
     return null;
   }
-  const user = {
-    name: session.user?.name || "User",
-    email: session.user?.email || "",
-    avatar: session.user?.image || "",
-  };
+  
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        {/* Mobile trigger button - hanya tampil di mobile */}
+        <div className="md:hidden sticky top-0 z-10 bg-background border-b">
+          <div className="flex items-center gap-2 px-4 py-3">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
+            <h1 className="text-lg font-semibold">SIMPENSI</h1>
           </div>
-          <div className="ml-auto px-4">
-            <NavUser user={user} />
-          </div>
-        </header>
-        {children}
+        </div>
+        
+        {/* Main content - tanpa navbar */}
+        <main className="flex-1">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

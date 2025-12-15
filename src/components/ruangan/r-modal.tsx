@@ -88,7 +88,7 @@ export function RuanganModal({
             </h2>
 
             <p className="mb-6 text-sm text-gray-600">
-              Apakah anda yakin akan menghapus data ini?
+              Apakah anda yakin akan menghapus data ruangan ini?
             </p>
 
             <div className="flex w-full gap-3">
@@ -166,6 +166,15 @@ export function RuanganModal({
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isPending}
+            >
+              Batal
+            </Button>
+            <Button
               type="submit"
               disabled={isPending || !formData.nama.trim()}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
@@ -181,15 +190,6 @@ export function RuanganModal({
                   {editingRuangan ? "Perbarui Ruangan" : "Simpan Ruangan"}
                 </>
               )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={onClose}
-              disabled={isPending}
-            >
-              Batal
             </Button>
           </div>
         </form>

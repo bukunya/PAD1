@@ -4,6 +4,11 @@ import { getUserProfile } from "@/lib/actions/profile/profile";
 import { getDosenName } from "@/lib/actions/profile/getDosenName";
 import { ProfileClient } from "@/components/profile/p-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Profil",
+  description: "Lihat dan kelola profil pengguna",
+};
+
 export default async function ProfilePage() {
   const session = await auth();
 

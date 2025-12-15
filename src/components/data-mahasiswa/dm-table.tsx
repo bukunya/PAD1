@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EditMahasiswaModal } from "./dm-editmodal";
 import { DeleteModal } from "../shared/dddm-deletemodal";
-import { deleteUser } from "@/lib/actions/profile/deleteUser";
+import { hapusDataMhs } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -30,10 +30,7 @@ interface MahasiswaTableProps {
 
 const ITEMS_PER_PAGE = 10;
 
-export function MahasiswaTable({
-  mahasiswa,
-  dosenList,
-}: MahasiswaTableProps) {
+export function MahasiswaTable({ mahasiswa, dosenList }: MahasiswaTableProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -59,12 +56,15 @@ export function MahasiswaTable({
   const confirmDelete = async () => {
     if (!selectedMahasiswa) return;
 
-    const result = await deleteUser(selectedMahasiswa.id);
+    const result = await hapusDataMhs(selectedMahasiswa.id);
+    
     if (result.success) {
       toast.success("Data mahasiswa berhasil dihapus");
       router.refresh();
+      setDeleteModalOpen(false);
     } else {
-      toast.error(result.error || "Gagal menghapus data");
+      toast.error("Gagal menghapus data mahasiswa");
+      console.error("Error deleting mahasiswa:", result.error);
     }
   };
 
@@ -74,7 +74,8 @@ export function MahasiswaTable({
       TeknologiRekayasaPerangkatLunak: "Teknologi Rekayasa Perangkat Lunak",
       TeknologiRekayasaElektro: "Teknologi Rekayasa Elektro",
       TeknologiRekayasaInternet: "Teknologi Rekayasa Internet",
-      TeknologiRekayasaInstrumentasiDanKontrol: "Teknologi Rekayasa Instrumentasi dan Kontrol",
+      TeknologiRekayasaInstrumentasiDanKontrol:
+        "Teknologi Rekayasa Instrumentasi dan Kontrol",
     };
     return prodiMap[prodi] || prodi;
   };
@@ -148,7 +149,10 @@ export function MahasiswaTable({
             <tbody className="divide-y divide-gray-200">
               {paginatedMahasiswa.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Tidak ada data mahasiswa
                   </td>
                 </tr>
@@ -161,7 +165,10 @@ export function MahasiswaTable({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 rounded-full">
-                          <AvatarImage src={mhs.image || ""} alt={mhs.name || ""} />
+                          <AvatarImage
+                            src={mhs.image || ""}
+                            alt={mhs.name || ""}
+                          />
                           <AvatarFallback className="rounded-full bg-blue-100 text-blue-600">
                             {mhs.name?.charAt(0).toUpperCase() || "M"}
                           </AvatarFallback>
@@ -215,7 +222,9 @@ export function MahasiswaTable({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+              onClick={() =>
+                currentPage > 1 && handlePageChange(currentPage - 1)
+              }
               disabled={currentPage === 1}
               className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >

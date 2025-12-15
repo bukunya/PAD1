@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/ruangan";
 import { RuanganTable } from "./r-table";
 import { RuanganModal } from "./r-modal";
+import { PageHeader } from "@/components/page-header";
 
 interface Ruangan {
   id: string;
@@ -153,12 +154,10 @@ export function RuanganClient() {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manajemen Ruangan</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Kelola data ruangan untuk penjadwalan ujian tugas akhir
-          </p>
-        </div>
+        <PageHeader
+          title="Manajemen Ruangan"
+          description="Kelola data ruangan untuk penjadwalan ujian tugas akhir mahasiswa"
+        />
 
         <Button 
           onClick={() => handleOpenFormModal()}

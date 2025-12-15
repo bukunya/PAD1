@@ -1,7 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import FpTop from "@/components/form-pengajuan/fp-top";
 import FpBottom from "@/components/form-pengajuan/fp-bottom";
+import { PageHeader } from "@/components/page-header";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Form Pengajuan",
+  description: "Ajukan permohonan ujian tugas akhir Anda",
+};
 
 export default async function FormPengajuanPage() {
   const session = await auth();
@@ -24,15 +29,13 @@ export default async function FormPengajuanPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Form Pengajuan Ujian Tugas Akhir</h1>
-        <p className="text-muted-foreground">
-          Lengkapi data diri dan unggah berkas pengajuan ujian tugas akhir Anda.
-        </p>
-      </div>
+      <PageHeader
+        title="Form Pengajuan"
+        description="Ajukan permohonan ujian tugas akhir Anda"
+      />
 
-      {/* Data Mahasiswa Section */}
-      <FpTop />
+      {/* Data Mahasiswa Section
+      <FpTop /> */}
 
       {/* Upload Berkas Section */}
       <FpBottom />

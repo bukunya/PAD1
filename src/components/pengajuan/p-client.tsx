@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "lucide-react";
 import PengajuanTable from "./p-table";
+import { PageHeader } from "@/components/page-header";
 
 interface Pengajuan {
   id: string;
@@ -62,12 +63,10 @@ export default function PengajuanClient({ initialData }: PengajuanClientProps) {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Verifikasi Pengajuan</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Kelola dan verifikasi pengajuan ujian tugas akhir mahasiswa
-          </p>
-        </div>
+        <PageHeader
+          title="Pengajuan"
+          description="Kelola pengajuan ujian tugas akhir mahasiswa yang telah diajukan"
+        />
 
         {/* Filter Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

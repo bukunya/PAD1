@@ -1,7 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getAllPengajuan } from "@/lib/actions/adminPengajuan/getPengajuan";
+import { getAllPengajuan } from "@/lib/actions/manajemenPengajuanFormPendaftaran/manajemenPengajuanFormPendaftaran";
 import PenjadwalanClient from "@/components/form-penjadwalan/fp-client";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Form Penjadwalan",
+  description: "Kelola penjadwalan ujian tugas akhir mahasiswa",
+};
 
 export default async function PenjadwalanPage() {
   const session = await auth();

@@ -4,8 +4,9 @@ import DashboardClient from "@/components/dashboard/dashboard-client";
 import { dashboardTop } from "@/lib/actions/dashboard/dashboardTop";
 import { dashBottom } from "@/lib/actions/dashboard/dashBottom";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
-import { prisma } from "@/lib/prisma";
+import { dashboardAdmin } from "@/lib/actions/dashboard/adminDash";
 import { verifyUserRole } from "@/lib/actions/auth/verifyRole";
+import { PageHeader } from "@/components/page-header";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -25,49 +26,9 @@ export default async function DashboardPage() {
 
   const userRole = String(session.user.role || "").toUpperCase();
 
-  // Fetch pengajuan data for admin (directly from prisma)
   let pengajuanData = null;
   if (userRole === "ADMIN") {
-    try {
-      const pengajuanList = await prisma.ujian.findMany({
-        where: {
-          status: {
-            in: ["MENUNGGU_VERIFIKASI", "DITERIMA", "DITOLAK", "DIJADWALKAN"],
-          },
-        },
-        select: {
-          id: true,
-          judul: true,
-          berkasUrl: true,
-          status: true,
-          createdAt: true,
-          tanggalUjian: true,
-          mahasiswa: {
-            select: {
-              id: true,
-              name: true,
-              nim: true,
-              prodi: true,
-              image: true,
-            },
-          },
-          dosenPembimbing: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-
-      pengajuanData = { success: true, data: pengajuanList };
-    } catch (error) {
-      console.error("Error fetching pengajuan:", error);
-      pengajuanData = { success: false, data: [] };
-    }
+    pengajuanData = await dashboardAdmin();
   }
 
   // Fetch dashboard data
@@ -94,7 +55,46 @@ export default async function DashboardPage() {
         }
       : { data: [] };
 
+  // Get first name
+  const userName = session.user?.name || "User";
+
+  // Simple role-based content
+  const getPageContent = () => {
+    switch (userRole) {
+      case "MAHASISWA":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Pantau status pengajuan dan jadwal sidang tugas akhir Anda",
+        };
+      
+      case "DOSEN":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Kelola jadwal bimbingan dan ujian mahasiswa Anda",
+        };
+      
+      case "ADMIN":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Kelola pengajuan dan penjadwalan sidang secara menyeluruh",
+        };
+      
+      default:
+        return {
+          title: "Dashboard",
+          description: "Selamat datang di SIMPENSI",
+        };
+    }
+  };
+
+  const pageContent = getPageContent();
+
   return (
+    <div className="space y-6 p-6">
+      <PageHeader 
+        title={pageContent.title}
+        description={pageContent.description} />
+
     <DashboardClient
       role={userRole}
       topData={topData}
@@ -102,5 +102,6 @@ export default async function DashboardPage() {
       notifications={notifications}
       pengajuanData={pengajuanData}
     />
+    </div>
   );
 }

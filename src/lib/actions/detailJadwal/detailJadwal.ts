@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
    INTERFACES
 ============================= */
 
-interface dosenDJ {
+export interface DosenDJ {
   id: string;
   namaMahasiswa: string | null;
   nim: string | null;
@@ -22,15 +22,16 @@ interface dosenDJ {
   angkatan: string | null;
 }
 
-interface mahasiswaDJ {
+export interface MahasiswaDJ {
   id: string;
   judul: string | null;
   tanggal: Date | null;
   jamMulai: Date | null;
   jamSelesai: Date | null;
+  ruangan: string | null;
 }
 
-interface adminDJ {
+export interface AdminDJ {
   id: string;
   namaMahasiswa: string | null;
   nim: string | null;
@@ -46,7 +47,7 @@ interface adminDJ {
   dosenPenguji: string[];
 }
 
-interface FilterOptions {
+export interface FilterOptions {
   startDate?: Date;
   endDate?: Date;
   prodi?: string;
@@ -57,7 +58,9 @@ interface FilterOptions {
 }
 
 /* ============================
-   1. DETAIL JADWAL (LIST)
+   1. DETAIL JADWAL (LIST) - ALL ROLES
+   Purpose: Menampilkan jadwal ujian yang AKAN DATANG
+   Status: DIJADWALKAN dengan tanggalUjian >= today
 ============================= */
 
 export async function detailJadwal(filters?: FilterOptions) {
@@ -81,7 +84,7 @@ export async function detailJadwal(filters?: FilterOptions) {
 
   try {
     const userId = session.user.id;
-    let data: dosenDJ[] | mahasiswaDJ[] | adminDJ[] | null = null;
+    let data: DosenDJ[] | MahasiswaDJ[] | AdminDJ[] = [];
     let totalCount = 0;
 
     switch (role) {
@@ -89,10 +92,20 @@ export async function detailJadwal(filters?: FilterOptions) {
          ADMIN
       ====================== */
       case "ADMIN": {
+        // Get current date at start of today (00:00:00)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const whereClause: any = { status: "DIJADWALKAN" };
+        const whereClause: any = { 
+          status: "DIJADWALKAN",
+          tanggalUjian: {
+            gte: today, // Hanya ambil ujian yang akan datang (hari ini dan kedepan)
+          },
+        };
 
         if (filters?.startDate || filters?.endDate) {
+          // Override tanggalUjian filter jika ada custom date range filter
           whereClause.tanggalUjian = {};
           if (filters.startDate)
             whereClause.tanggalUjian.gte = filters.startDate;
@@ -143,7 +156,11 @@ export async function detailJadwal(filters?: FilterOptions) {
             tanggalUjian: true,
             jamMulai: true,
             jamSelesai: true,
-            ruangan: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
             dosenPembimbing: { select: { name: true } },
             dosenPenguji: {
               select: {
@@ -155,7 +172,7 @@ export async function detailJadwal(filters?: FilterOptions) {
         });
 
         data = adminData.map((item) => {
-          const angkatan = item.mahasiswa?.nim?.substring(0, 4) || null;
+          const angkatan = item.mahasiswa?.nim?.substring(0, 2) || null;
 
           return {
             id: item.id,
@@ -166,13 +183,13 @@ export async function detailJadwal(filters?: FilterOptions) {
             tanggal: item.tanggalUjian ?? null,
             jamMulai: item.jamMulai ?? null,
             jamSelesai: item.jamSelesai ?? null,
-            ruangan: item.ruangan || null,
+            ruangan: item.ruangan?.nama || null,
             prodi: item.mahasiswa?.prodi || null,
             angkatan,
             dosenPembimbing: item.dosenPembimbing?.name || null,
             dosenPenguji: item.dosenPenguji.map((dp) => dp.dosen.name || ""),
           };
-        }) as adminDJ[];
+        }) as AdminDJ[];
 
         break;
       }
@@ -203,14 +220,18 @@ export async function detailJadwal(filters?: FilterOptions) {
             tanggalUjian: true,
             jamMulai: true,
             jamSelesai: true,
-            ruangan: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
             dosenPembimbingId: true,
           },
           orderBy: { tanggalUjian: "asc" },
         });
 
         data = dosenData.map((item) => {
-          const angkatan = item.mahasiswa?.nim?.substring(0, 4) || null;
+          const angkatan = item.mahasiswa?.nim?.substring(0, 2) || null;
 
           return {
             id: item.id,
@@ -221,12 +242,12 @@ export async function detailJadwal(filters?: FilterOptions) {
             tanggal: item.tanggalUjian ?? null,
             jamMulai: item.jamMulai ?? null,
             jamSelesai: item.jamSelesai ?? null,
-            ruangan: item.ruangan || null,
+            ruangan: item.ruangan?.nama || null,
             isDosenPembimbing: item.dosenPembimbingId === userId,
             prodi: item.mahasiswa?.prodi || null,
             angkatan,
           };
-        }) as dosenDJ[];
+        }) as DosenDJ[];
 
         break;
       }
@@ -246,6 +267,11 @@ export async function detailJadwal(filters?: FilterOptions) {
             tanggalUjian: true,
             jamMulai: true,
             jamSelesai: true,
+            ruangan: {
+              select: {
+                nama: true,
+              },
+            },
           },
           orderBy: { tanggalUjian: "asc" },
         });
@@ -256,7 +282,8 @@ export async function detailJadwal(filters?: FilterOptions) {
           tanggal: item.tanggalUjian ?? null,
           jamMulai: item.jamMulai ?? null,
           jamSelesai: item.jamSelesai ?? null,
-        })) as mahasiswaDJ[];
+          ruangan: item.ruangan?.nama || null,
+        })) as MahasiswaDJ[];
 
         break;
       }
@@ -283,7 +310,139 @@ export async function detailJadwal(filters?: FilterOptions) {
 }
 
 /* ============================
-   2. DETAIL UJIAN PER ID
+   2. GET ADMIN JADWAL (ADMIN ONLY)
+   Purpose: Menampilkan RIWAYAT ujian yang SUDAH SELESAI
+   Status: SELESAI (sudah di-auto-update oleh system)
+============================= */
+
+export async function getAdminJadwal(filters?: FilterOptions) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return {
+      success: false as const,
+      error: "Anda harus login untuk mengakses halaman ini",
+    };
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return {
+      success: false as const,
+      error: "Halaman ini hanya dapat diakses oleh Admin Prodi",
+    };
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whereClause: any = {
+      status: "SELESAI", // Tampilkan ujian yang sudah selesai untuk RIWAYAT
+    };
+
+    if (filters?.startDate || filters?.endDate) {
+      whereClause.tanggalUjian = {};
+      if (filters.startDate) {
+        whereClause.tanggalUjian.gte = filters.startDate;
+      }
+      if (filters.endDate) {
+        whereClause.tanggalUjian.lte = filters.endDate;
+      }
+    }
+
+    if (filters?.prodi) {
+      whereClause.mahasiswa = {
+        prodi: filters.prodi,
+      };
+    }
+
+    if (filters?.search) {
+      whereClause.OR = [
+        {
+          mahasiswa: {
+            name: { contains: filters.search, mode: "insensitive" },
+          },
+        },
+        {
+          mahasiswa: { nim: { contains: filters.search, mode: "insensitive" } },
+        },
+      ];
+    }
+
+    const adminData = await prisma.ujian.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        mahasiswa: {
+          select: {
+            name: true,
+            nim: true,
+            image: true,
+            prodi: true,
+          },
+        },
+        judul: true,
+        tanggalUjian: true,
+        jamMulai: true,
+        jamSelesai: true,
+        ruangan: {
+          select: {
+            nama: true,
+          },
+        },
+        dosenPembimbing: {
+          select: {
+            name: true,
+          },
+        },
+        dosenPenguji: {
+          select: {
+            dosen: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        tanggalUjian: "desc", // Terbaru dulu untuk riwayat
+      },
+    });
+
+    const data = adminData.map((item) => {
+      const angkatan = item.mahasiswa?.nim?.substring(0, 2) || null;
+
+      return {
+        id: item.id,
+        namaMahasiswa: item.mahasiswa?.name || null,
+        nim: item.mahasiswa?.nim || null,
+        foto: item.mahasiswa?.image || null,
+        judulTugasAkhir: item.judul || null,
+        tanggal: item.tanggalUjian ?? null,
+        jamMulai: item.jamMulai ?? null,
+        jamSelesai: item.jamSelesai ?? null,
+        ruangan: item.ruangan?.nama || null,
+        prodi: item.mahasiswa?.prodi || null,
+        angkatan,
+        dosenPembimbing: item.dosenPembimbing?.name || null,
+        dosenPenguji: item.dosenPenguji.map((dp) => dp.dosen.name || ""),
+      };
+    }) as AdminDJ[];
+
+    return {
+      success: true as const,
+      data,
+    };
+  } catch (error) {
+    console.error("Error in getAdminJadwal:", error);
+    return {
+      success: false as const,
+      error: "Terjadi kesalahan saat mengambil data jadwal",
+    };
+  }
+}
+
+/* ============================
+   3. DETAIL UJIAN PER ID (ALL ROLES)
 ============================= */
 
 export async function getUjianDetailsForAll(ujianId: string) {
@@ -311,7 +470,11 @@ export async function getUjianDetailsForAll(ujianId: string) {
         tanggalUjian: true,
         jamMulai: true,
         jamSelesai: true,
-        ruangan: true,
+        ruangan: {
+          select: {
+            nama: true,
+          },
+        },
         mahasiswa: {
           select: {
             id: true,

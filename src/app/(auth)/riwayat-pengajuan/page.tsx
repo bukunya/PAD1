@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
 import { RiwayatPengajuanClient } from "@/components/riwayat-pengajuan/rp-client";
 
+export const metadata = {
+  title: "SIMPENSI UGM: Riwayat Pengajuan",
+  description: "Lihat riwayat pengajuan ujian tugas akhir",
+};
+
 interface PageProps {
   searchParams: Promise<{
     page?: string;

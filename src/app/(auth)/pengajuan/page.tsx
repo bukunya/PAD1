@@ -1,7 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getAllPengajuan } from "@/lib/actions/adminPengajuan/getPengajuan";
+import { getAllPengajuan } from "@/lib/actions/manajemenPengajuanFormPendaftaran/manajemenPengajuanFormPendaftaran";
 import PengajuanClient from "@/components/pengajuan/p-client";
+
+export const metadata = {
+  title: "SIMPENSI UGM: Pengajuan",
+  description: "Lihat dan kelola pengajuan ujian tugas akhir mahasiswa",
+};
 
 export default async function PengajuanPage() {
   const session = await auth();

@@ -43,7 +43,7 @@ export default function DashboardClient({
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Main Grid: Left (Stats + Notif/Pengajuan) | Right (Calendar) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
         {/* LEFT COLUMN - Flexible with scroll */}

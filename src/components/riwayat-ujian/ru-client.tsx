@@ -2,7 +2,14 @@
 
 import { RiwayatUjianTable } from "./ru-table";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface RiwayatUjianData {
   id: string;
@@ -26,6 +33,8 @@ interface PaginationInfo {
 interface RiwayatUjianClientProps {
   data: RiwayatUjianData[];
   pagination: PaginationInfo;
+  statusFilter: string;
+  peranFilter: string;
 }
 
 export function RiwayatUjianClient({
@@ -42,7 +51,6 @@ export function RiwayatUjianClient({
     const pages = [];
     const { page, totalPages } = pagination;
 
-    // Show first page
     if (page > 2) {
       pages.push(
         <Button
@@ -57,7 +65,6 @@ export function RiwayatUjianClient({
       );
     }
 
-    // Show ellipsis if needed
     if (page > 3) {
       pages.push(
         <span key="ellipsis-start" className="px-2 text-gray-500">
@@ -66,7 +73,6 @@ export function RiwayatUjianClient({
       );
     }
 
-    // Show pages around current page
     for (let i = Math.max(1, page - 1); i <= Math.min(totalPages, page + 1); i++) {
       pages.push(
         <Button
@@ -85,7 +91,6 @@ export function RiwayatUjianClient({
       );
     }
 
-    // Show ellipsis if needed
     if (page < totalPages - 2) {
       pages.push(
         <span key="ellipsis-end" className="px-2 text-gray-500">
@@ -94,7 +99,6 @@ export function RiwayatUjianClient({
       );
     }
 
-    // Show last page
     if (page < totalPages - 1) {
       pages.push(
         <Button
@@ -145,6 +149,60 @@ export function RiwayatUjianClient({
       <div className="text-center text-sm text-gray-500">
         Menampilkan {data.length} dari {pagination.total} ujian
       </div>
+    </div>
+  );
+}
+
+// Export filter component separately
+export function RiwayatUjianFilters({ 
+  statusFilter, 
+  peranFilter 
+}: { 
+  statusFilter: string; 
+  peranFilter: string;
+}) {
+  const handleFilterChange = (filterType: string, value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("page", "1");
+    
+    if (value === "semua") {
+      url.searchParams.delete(filterType);
+    } else {
+      url.searchParams.set(filterType, value);
+    }
+    
+    window.location.href = url.toString();
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Calendar className="h-4 w-4 text-muted-foreground" />
+      <Select 
+        value={statusFilter} 
+        onValueChange={(value) => handleFilterChange("status", value)}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="semua">Semua Status</SelectItem>
+          <SelectItem value="selesai">Selesai</SelectItem>
+          <SelectItem value="dijadwalkan">Dijadwalkan</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select 
+        value={peranFilter} 
+        onValueChange={(value) => handleFilterChange("peran", value)}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Peran" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="semua">Semua Peran</SelectItem>
+          <SelectItem value="pembimbing">Pembimbing</SelectItem>
+          <SelectItem value="penguji">Penguji</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
