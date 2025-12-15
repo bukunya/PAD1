@@ -6,6 +6,7 @@ import { dashBottom } from "@/lib/actions/dashboard/dashBottom";
 import { getNotifications } from "@/lib/actions/notifikasi/notifications";
 import { dashboardAdmin } from "@/lib/actions/dashboard/adminDash";
 import { verifyUserRole } from "@/lib/actions/auth/verifyRole";
+import { PageHeader } from "@/components/page-header";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -54,7 +55,46 @@ export default async function DashboardPage() {
         }
       : { data: [] };
 
+  // Get first name
+  const userName = session.user?.name || "User";
+
+  // Simple role-based content
+  const getPageContent = () => {
+    switch (userRole) {
+      case "MAHASISWA":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Pantau status pengajuan dan jadwal sidang tugas akhir Anda",
+        };
+      
+      case "DOSEN":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Kelola jadwal bimbingan dan ujian mahasiswa Anda",
+        };
+      
+      case "ADMIN":
+        return {
+          title: `Selamat datang, ${userName}!`,
+          description: "Kelola pengajuan dan penjadwalan sidang secara menyeluruh",
+        };
+      
+      default:
+        return {
+          title: "Dashboard",
+          description: "Selamat datang di SIMPENSI",
+        };
+    }
+  };
+
+  const pageContent = getPageContent();
+
   return (
+    <div className="space y-6 p-6">
+      <PageHeader 
+        title={pageContent.title}
+        description={pageContent.description} />
+
     <DashboardClient
       role={userRole}
       topData={topData}
@@ -62,5 +102,6 @@ export default async function DashboardPage() {
       notifications={notifications}
       pengajuanData={pengajuanData}
     />
+    </div>
   );
 }

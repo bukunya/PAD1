@@ -147,7 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       await signOut({ redirect: false });
 
       // Force clear cookies via API
-      await fetch("/api/auth/logout", {
+      await fetch("/api/logout", {
         method: "GET",
         credentials: "include"
       });

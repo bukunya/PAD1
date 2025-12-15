@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { EditDosenModal } from "./dd-editmodal";
+import { DeleteModal } from "../shared/dddm-deletemodal";
 import { hapusDataDsn } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
-// import { DeleteModal } from "../shared/dddm-deletemodal"; modal delete
-// import { deleteUser } from "@/lib/actions/profile/deleteUser"; ku nonaktifin karena emang buat fitur hapus dosen belum ada, cuma buat nampilin modal doang
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface DosenData {
   id: string;
@@ -29,9 +29,10 @@ interface DosenTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export function DosenTable({ dosen }: DosenTableProps) {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [, setDeleteModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedDosen, setSelectedDosen] = useState<DosenData | null>(null);
 
   const totalPages = Math.ceil(dosen.length / ITEMS_PER_PAGE);
@@ -45,20 +46,24 @@ export function DosenTable({ dosen }: DosenTableProps) {
   };
 
   const handleDelete = (dsn: DosenData) => {
-    hapusDataDsn(dsn.id);
+    setSelectedDosen(dsn);
+    setDeleteModalOpen(true);
   };
 
-  // const confirmDelete = async () => {
-  //   if (!selectedDosen) return;
+  const confirmDelete = async () => {
+    if (!selectedDosen) return;
 
-  //   const result = await deleteUser(selectedDosen.id);
-  //   if (result.success) {
-  //     toast.success("Data dosen berhasil dihapus");
-  //     router.refresh();
-  //   } else {
-  //     toast.error(result.error || "Gagal menghapus data");
-  //   }
-  // };
+    const result = await hapusDataDsn(selectedDosen.id);
+    
+    if (result.success) {
+      toast.success("Data dosen berhasil dihapus");
+      router.refresh();
+      setDeleteModalOpen(false);
+    } else {
+      toast.error("Gagal menghapus data dosen");
+      console.error("Error deleting dosen:", result.error);
+    }
+  };
 
   const getProdiLabel = (prodi: string | null) => {
     if (!prodi) return "-";
@@ -186,7 +191,6 @@ export function DosenTable({ dosen }: DosenTableProps) {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        {/* button delete */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -265,13 +269,13 @@ export function DosenTable({ dosen }: DosenTableProps) {
         dosen={selectedDosen}
       />
 
-      {/* <DeleteModal
+      <DeleteModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         userName={selectedDosen?.name || ""}
         userType="dosen"
-      /> */}
+      />
     </>
   );
 }

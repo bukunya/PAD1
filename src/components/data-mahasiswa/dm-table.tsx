@@ -5,10 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EditMahasiswaModal } from "./dm-editmodal";
+import { DeleteModal } from "../shared/dddm-deletemodal";
 import { hapusDataMhs } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
-// import { DeleteModal } from "../shared/dddm-deletemodal";
-// import { deleteUser } from "@/lib/actions/profile/deleteUser";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface MahasiswaData {
   id: string;
@@ -31,9 +31,10 @@ interface MahasiswaTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export function MahasiswaTable({ mahasiswa, dosenList }: MahasiswaTableProps) {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [, setDeleteModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedMahasiswa, setSelectedMahasiswa] =
     useState<MahasiswaData | null>(null);
 
@@ -47,8 +48,24 @@ export function MahasiswaTable({ mahasiswa, dosenList }: MahasiswaTableProps) {
     setEditModalOpen(true);
   };
 
-  const handleDelete = async (mhs: MahasiswaData) => {
-    await hapusDataMhs(mhs.id);
+  const handleDelete = (mhs: MahasiswaData) => {
+    setSelectedMahasiswa(mhs);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedMahasiswa) return;
+
+    const result = await hapusDataMhs(selectedMahasiswa.id);
+    
+    if (result.success) {
+      toast.success("Data mahasiswa berhasil dihapus");
+      router.refresh();
+      setDeleteModalOpen(false);
+    } else {
+      toast.error("Gagal menghapus data mahasiswa");
+      console.error("Error deleting mahasiswa:", result.error);
+    }
   };
 
   const getProdiLabel = (prodi: string | null) => {
@@ -261,13 +278,13 @@ export function MahasiswaTable({ mahasiswa, dosenList }: MahasiswaTableProps) {
         dosenList={dosenList}
       />
 
-      {/* <DeleteModal
+      <DeleteModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        // onConfirm={confirmDelete}
+        onConfirm={confirmDelete}
         userName={selectedMahasiswa?.name || ""}
         userType="mahasiswa"
-      /> */}
+      />
     </>
   );
 }
