@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { EditDosenModal } from "./dd-editmodal";
+import { hapusDataDsn } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
 // import { DeleteModal } from "../shared/dddm-deletemodal"; modal delete
 // import { deleteUser } from "@/lib/actions/profile/deleteUser"; ku nonaktifin karena emang buat fitur hapus dosen belum ada, cuma buat nampilin modal doang
 // import { useRouter } from "next/navigation";
@@ -44,8 +45,7 @@ export function DosenTable({ dosen }: DosenTableProps) {
   };
 
   const handleDelete = (dsn: DosenData) => {
-    setSelectedDosen(dsn);
-    setDeleteModalOpen(true);
+    hapusDataDsn(dsn.id);
   };
 
   // const confirmDelete = async () => {
@@ -66,7 +66,8 @@ export function DosenTable({ dosen }: DosenTableProps) {
       TeknologiRekayasaPerangkatLunak: "Teknologi Rekayasa Perangkat Lunak",
       TeknologiRekayasaElektro: "Teknologi Rekayasa Elektro",
       TeknologiRekayasaInternet: "Teknologi Rekayasa Internet",
-      TeknologiRekayasaInstrumentasiDanKontrol: "Teknologi Rekayasa Instrumentasi dan Kontrol",
+      TeknologiRekayasaInstrumentasiDanKontrol:
+        "Teknologi Rekayasa Instrumentasi dan Kontrol",
     };
     return prodiMap[prodi] || prodi;
   };
@@ -135,7 +136,10 @@ export function DosenTable({ dosen }: DosenTableProps) {
             <tbody className="divide-y divide-gray-200">
               {paginatedDosen.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={4}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Tidak ada data dosen
                   </td>
                 </tr>
@@ -148,7 +152,10 @@ export function DosenTable({ dosen }: DosenTableProps) {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 rounded-full">
-                          <AvatarImage src={dsn.image || ""} alt={dsn.name || ""} />
+                          <AvatarImage
+                            src={dsn.image || ""}
+                            alt={dsn.name || ""}
+                          />
                           <AvatarFallback className="rounded-full bg-green-100 text-green-600">
                             {dsn.name?.charAt(0).toUpperCase() || "D"}
                           </AvatarFallback>
@@ -187,7 +194,7 @@ export function DosenTable({ dosen }: DosenTableProps) {
                           className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
-                        </Button> 
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -203,7 +210,9 @@ export function DosenTable({ dosen }: DosenTableProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+              onClick={() =>
+                currentPage > 1 && handlePageChange(currentPage - 1)
+              }
               disabled={currentPage === 1}
               className="h-9 w-9 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
