@@ -42,6 +42,12 @@ interface ProfileClientProps {
   dosenList?: Array<{ id: string; name: string | null }>;
 }
 
+interface UpdateProfileResult {
+  success?: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string | string[]>;
+}
+
 export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +128,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
   };
 
   // ✅ Format error messages to be more user-friendly
-  const formatErrorMessage = (result: any): string => {
+  const formatErrorMessage = (result: UpdateProfileResult): string => {
     if (result.fieldErrors) {
       const fieldLabelMap: Record<string, string> = {
         name: "Nama",
@@ -138,7 +144,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
         const fieldLabel = fieldLabelMap[field] || field;
         const errorMessages = Array.isArray(errorList) ? errorList : [errorList];
 
-        errorMessages.forEach((err: any) => {
+        errorMessages.forEach((err: string | unknown) => {
           const errorText = typeof err === 'string' ? err : String(err);
           
           // Format: "Field: Error message"
