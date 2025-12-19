@@ -118,7 +118,14 @@ export function RiwayatUjianClient({
 
   return (
     <div className="space-y-4">
-      <RiwayatUjianTable data={data} />
+      {data.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
+          <h3 className="text-lg font-semibold text-gray-900">Tidak ada riwayat ujian</h3>
+          <p className="text-sm text-gray-600 mt-2">Belum ada ujian yang telah dilaksanakan untuk kriteria yang dipilih.</p>
+        </div>
+      ) : (
+        <RiwayatUjianTable data={data} />
+      )}
 
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">

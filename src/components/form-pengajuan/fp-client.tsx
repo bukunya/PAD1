@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, FileUp, Loader2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, FileUp, Loader2, XCircle, Lock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +24,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileErrorModal } from "./fp-errormodal";
 
+// ✅ Interface diperbarui agar sesuai dengan DataProfile.ts
 interface ProfileData {
   success: boolean;
   data?: {
     dosenPembimbingId: string | null;
     dosenPembimbing: string | null;
+    hasActiveSubmission?: boolean; // Tambahkan ini
+    submissionStatus?: string;     // Tambahkan ini
   };
   error?: string;
 }
@@ -37,7 +40,6 @@ interface FpClientProps {
   profile: ProfileData;
 }
 
-// Komponen tombol terpisah untuk menampilkan status "pending"
 function SubmitButton({ hasFile, disabled }: { hasFile: boolean; disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
@@ -66,15 +68,16 @@ export default function FpClient({ profile }: FpClientProps) {
   const [dosenPembimbingName, setDosenPembimbingName] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // State untuk Alert Dialog
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   
-  // State untuk File Error Modal
   const [showFileErrorModal, setShowFileErrorModal] = useState(false);
   const [fileErrorMessage, setFileErrorMessage] = useState("");
 
-  // Set initial profile data
+  // ✅ Gunakan !! untuk memastikan nilai boolean (mengatasi error "boolean | undefined")
+  const isFormDisabled = !!profile.data?.hasActiveSubmission && 
+    profile.data?.submissionStatus !== "DITOLAK";
+
   useEffect(() => {
     if (profile.success && profile.data) {
       setDosenPembimbingId(profile.data.dosenPembimbingId || "");
@@ -82,7 +85,6 @@ export default function FpClient({ profile }: FpClientProps) {
     }
   }, [profile]);
 
-  // Handle success/error dari form submission
   useEffect(() => {
     if (state.message) {
       if (state.success) {
@@ -111,7 +113,6 @@ export default function FpClient({ profile }: FpClientProps) {
     const file = e.target.files?.[0];
     
     if (file) {
-      // Validasi tipe file
       if (file.type !== "application/pdf") {
         setFileErrorMessage("File yang Anda upload bukan format PDF. Silakan upload file dengan format PDF.");
         setShowFileErrorModal(true);
@@ -120,7 +121,6 @@ export default function FpClient({ profile }: FpClientProps) {
         return;
       }
 
-      // Validasi ukuran file (10MB = 10 * 1024 * 1024 bytes)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
@@ -137,19 +137,16 @@ export default function FpClient({ profile }: FpClientProps) {
     }
   };
 
-  // Check jika tidak ada dosen pembimbing
   const disabledBecauseNoPembimbing = !dosenPembimbingId;
 
   return (
     <>
-      {/* File Error Modal */}
       <FileErrorModal
         isOpen={showFileErrorModal}
         onClose={handleFileErrorClose}
         errorMessage={fileErrorMessage}
       />
 
-      {/* Success Dialog */}
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -171,7 +168,6 @@ export default function FpClient({ profile }: FpClientProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error Dialog */}
       <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -196,25 +192,39 @@ export default function FpClient({ profile }: FpClientProps) {
       <div className="w-full">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold">Upload Berkas</CardTitle>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              Upload Berkas
+              {isFormDisabled && (
+                <Lock className="h-5 w-5 text-gray-400" />
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Alert jika tidak ada dosen pembimbing */}
-            {disabledBecauseNoPembimbing && (
+            {/* Alert jika form dikunci karena pengajuan aktif */}
+            {isFormDisabled && (
+              <Alert className="mb-4 bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  Anda sudah memiliki pengajuan aktif dengan status <strong>{profile.data?.submissionStatus}</strong>. 
+                  Form pengajuan akan aktif kembali jika status pengajuan Anda <strong>DITOLAK</strong>.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Alert jika tidak ada pembimbing */}
+            {disabledBecauseNoPembimbing && !isFormDisabled && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Informasi dosen pembimbing tidak tersedia. Silakan lengkapi profil untuk menentukan dosen pembimbing sebelum melakukan pengajuan.
+                  Informasi dosen pembimbing tidak tersedia. Silakan hubungi admin untuk menentukan dosen pembimbing sebelum melakukan pengajuan.
                 </AlertDescription>
               </Alert>
             )}
 
             <form action={formAction} className="space-y-6">
-              {/* Hidden inputs */}
               <input type="hidden" name="dosenPembimbingId" value={dosenPembimbingId} />
               <input type="hidden" name="dosenPembimbingName" value={dosenPembimbingName} />
 
-              {/* Judul Tugas Akhir */}
               <div className="space-y-2">
                 <Label htmlFor="judul" className="text-sm font-medium">
                   Judul Tugas Akhir
@@ -226,11 +236,10 @@ export default function FpClient({ profile }: FpClientProps) {
                   required
                   placeholder="Masukkan Judul Tugas Akhir"
                   className="w-full"
-                  disabled={disabledBecauseNoPembimbing}
+                  disabled={disabledBecauseNoPembimbing || isFormDisabled}
                 />
               </div>
 
-              {/* Dosen Pembimbing */}
               <div className="space-y-2">
                 <Label htmlFor="dosenPembimbingName" className="text-sm font-medium">
                   Dosen Pembimbing
@@ -245,7 +254,6 @@ export default function FpClient({ profile }: FpClientProps) {
                 />
               </div>
 
-              {/* Upload Berkas */}
               <div className="space-y-2">
                 <Label htmlFor="berkas" className="text-sm font-medium">
                   Upload Berkas
@@ -254,7 +262,7 @@ export default function FpClient({ profile }: FpClientProps) {
                   <label
                     htmlFor="berkas"
                     className={`flex items-center gap-2 px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg transition-colors ${
-                      disabledBecauseNoPembimbing
+                      disabledBecauseNoPembimbing || isFormDisabled
                         ? "cursor-not-allowed opacity-50"
                         : "cursor-pointer hover:bg-blue-100"
                     }`}
@@ -274,7 +282,7 @@ export default function FpClient({ profile }: FpClientProps) {
                   required
                   onChange={handleFileChange}
                   className="hidden"
-                  disabled={disabledBecauseNoPembimbing}
+                  disabled={disabledBecauseNoPembimbing || isFormDisabled}
                 />
                 {selectedFile && (
                   <p className="text-sm text-gray-600">
@@ -284,9 +292,11 @@ export default function FpClient({ profile }: FpClientProps) {
                 )}
               </div>
 
-              {/* Submit Button */}
               <div className="flex justify-end pt-4">
-                <SubmitButton hasFile={!!selectedFile} disabled={disabledBecauseNoPembimbing} />
+                <SubmitButton 
+                  hasFile={!!selectedFile} 
+                  disabled={disabledBecauseNoPembimbing || isFormDisabled} 
+                />
               </div>
             </form>
           </CardContent>

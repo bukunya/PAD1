@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Save, AlertTriangle, Lock } from "lucide-react";
 import { updateProfile } from "@/lib/actions/profile/profile";
 import { useRouter } from "next/navigation";
 import {
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserData {
   id: string;
@@ -42,12 +43,6 @@ interface ProfileClientProps {
   dosenList?: Array<{ id: string; name: string | null }>;
 }
 
-interface UpdateProfileResult {
-  success?: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string | string[]>;
-}
-
 export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +56,9 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
     telepon: user.telepon || "",
     dosenPembimbingId: user.dosenPembimbingId || "",
   });
+
+  // Check if pembimbing is already selected
+  const isPembimbingLocked = !!user.dosenPembimbingId;
 
   const getRoleLabel = (role: string) => {
     const roleMap: Record<string, string> = {
@@ -87,103 +85,22 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
   };
 
   const validateForm = () => {
-    const errors: string[] = [];
-
-    // Validate required fields
     if (!formData.name.trim()) {
-      errors.push("Nama: Silakan isi nama lengkap Anda");
-    }
-
-    if (!formData.nim.trim()) {
-      errors.push(`${getIdLabel(user.role)}: Silakan isi ${getIdLabel(user.role)} Anda`);
-    }
-
-    if (!formData.prodi) {
-      errors.push("Program Studi: Silakan pilih program studi yang tersedia");
-    }
-
-    // Validate phone number (required)
-    if (!formData.telepon || !formData.telepon.trim()) {
-      errors.push("Nomor Telepon: Silakan isi nomor telepon Anda");
-    } else {
-      const phoneRegex = /^(\+62|62|0)[8-9][0-9]{7,11}$/;
-      if (!phoneRegex.test(formData.telepon.trim())) {
-        errors.push("Nomor Telepon: Format tidak valid. Gunakan format: 08123456789");
-      }
-    }
-
-    // Validate dosen pembimbing for MAHASISWA
-    if (user.role === "MAHASISWA" && !formData.dosenPembimbingId) {
-      errors.push("Dosen Pembimbing: Silakan pilih dosen pembimbing Anda");
-    }
-
-    // Show errors if any
-    if (errors.length > 0) {
-      setErrorMessage(errors.join("\n"));
+      setErrorMessage("Nama lengkap wajib diisi");
       setShowErrorModal(true);
       return false;
     }
 
-    return true;
-  };
-
-  // ✅ Format error messages to be more user-friendly
-  const formatErrorMessage = (result: UpdateProfileResult): string => {
-    if (result.fieldErrors) {
-      const fieldLabelMap: Record<string, string> = {
-        name: "Nama",
-        nim: getIdLabel(user.role),
-        prodi: "Program Studi",
-        telepon: "Nomor Telepon",
-        dosenPembimbingId: "Dosen Pembimbing",
-      };
-
-      const errors: string[] = [];
-
-      Object.entries(result.fieldErrors).forEach(([field, errorList]) => {
-        const fieldLabel = fieldLabelMap[field] || field;
-        const errorMessages = Array.isArray(errorList) ? errorList : [errorList];
-
-        errorMessages.forEach((err: string | unknown) => {
-          const errorText = typeof err === 'string' ? err : String(err);
-          
-          // Format: "Field: Error message"
-          if (field === "name") {
-            if (errorText.includes("kosong") || errorText.includes("Required")) {
-              errors.push(`${fieldLabel}: Silakan isi nama lengkap Anda`);
-            } else if (errorText.includes("panjang")) {
-              errors.push(`${fieldLabel}: Maksimal 100 karakter`);
-            } else {
-              errors.push(`${fieldLabel}: Format tidak valid`);
-            }
-          } else if (field === "nim") {
-            if (errorText.includes("wajib") || errorText.includes("Required") || errorText.includes("min")) {
-              errors.push(`${fieldLabel}: Silakan isi ${fieldLabel} Anda`);
-            } else {
-              errors.push(`${fieldLabel}: Format tidak valid`);
-            }
-          } else if (field === "prodi") {
-            errors.push(`${fieldLabel}: Silakan pilih program studi yang tersedia`);
-          } else if (field === "telepon") {
-            if (errorText.includes("Format nomor telepon tidak valid") || errorText.includes("regex")) {
-              errors.push(`${fieldLabel}: Format tidak valid. Gunakan format: 08123456789`);
-            } else {
-              errors.push(`${fieldLabel}: Format tidak valid`);
-            }
-          } else if (field === "dosenPembimbingId") {
-            errors.push(`${fieldLabel}: Silakan pilih dosen pembimbing Anda`);
-          }
-        });
-      });
-
-      // Return formatted errors or a generic message
-      return errors.length > 0 
-        ? errors.join("\n") 
-        : "Mohon periksa kembali data yang Anda masukkan";
+    if (formData.telepon && formData.telepon.trim()) {
+      const phoneRegex = /^(\+62|62|0)[8-9][0-9]{7,11}$/;
+      if (!phoneRegex.test(formData.telepon.trim())) {
+        setErrorMessage("Format nomor telepon tidak valid. Contoh: 08123456789");
+        setShowErrorModal(true);
+        return false;
+      }
     }
 
-    // Return generic error message
-    return result.error || "Gagal memperbarui profil. Silakan coba lagi.";
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,16 +115,22 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
     try {
       const formDataToSend = new FormData();
       
-      // Always append name (required)
-      formDataToSend.append("name", formData.name.trim());
+      formDataToSend.append("name", formData.name);
       
-      // Append optional fields - send empty string if not filled
-      formDataToSend.append("nim", formData.nim.trim());
-      formDataToSend.append("prodi", formData.prodi);
-      formDataToSend.append("telepon", formData.telepon.trim());
+      if (formData.nim) {
+        formDataToSend.append("nim", formData.nim);
+      }
       
-      // Only append dosenPembimbingId for MAHASISWA
-      if (user.role === "MAHASISWA") {
+      if (formData.prodi) {
+        formDataToSend.append("prodi", formData.prodi);
+      }
+      
+      if (formData.telepon) {
+        formDataToSend.append("telepon", formData.telepon);
+      }
+      
+      // Only append if MAHASISWA and not already locked
+      if (formData.dosenPembimbingId && user.role === "MAHASISWA") {
         formDataToSend.append("dosenPembimbingId", formData.dosenPembimbingId);
       }
 
@@ -220,14 +143,47 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
           router.refresh();
         }, 2000);
       } else {
-        // ✅ Use the improved error formatting
-        const friendlyErrorMessage = formatErrorMessage(result);
-        setErrorMessage(friendlyErrorMessage);
+        if (result.fieldErrors) {
+          const fieldLabelMap: Record<string, string> = {
+            name: "Nama",
+            nim: "NIM",
+            prodi: "Program Studi",
+            telepon: "Nomor Telepon",
+            dosenPembimbingId: "Dosen Pembimbing",
+          };
+          
+          const errorTranslations: Record<string, string> = {
+            "Invalid input": "Format tidak valid",
+            "Required": "Wajib diisi",
+            "Nama tidak boleh kosong": "Nama tidak boleh kosong",
+            "Nama terlalu panjang": "Nama terlalu panjang (maksimal 100 karakter)",
+            "Format nomor telepon tidak valid": "Format nomor telepon tidak valid. Contoh: 08123456789",
+          };
+          
+          const fieldErrorMsg = Object.entries(result.fieldErrors)
+            .map(([field, errors]) => {
+              const fieldLabel = fieldLabelMap[field] || field;
+              const errorMessages = Array.isArray(errors) ? errors : [errors];
+              
+              const translatedErrors = errorMessages.map(err => {
+                if (field === "prodi" && (err === "Invalid input" || err === "Required")) {
+                  return "Silakan pilih program studi";
+                }
+                return errorTranslations[err] || err;
+              });
+              
+              return `${fieldLabel}: ${translatedErrors.join(", ")}`;
+            })
+            .join("\n");
+          setErrorMessage(fieldErrorMsg);
+        } else {
+          setErrorMessage(result.error || "Gagal memperbarui profil");
+        }
         setShowErrorModal(true);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setErrorMessage("Terjadi kesalahan saat memperbarui profil. Silakan coba lagi.");
+      setErrorMessage("Terjadi kesalahan saat memperbarui profil");
       setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
@@ -236,7 +192,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
 
   return (
     <>
-      <div onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="rounded-xl border shadow-sm">
           <CardContent className="space-y-6 p-6">
             <div className="flex items-center justify-between">
@@ -271,9 +227,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nim">
-                      {getIdLabel(user.role)} <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="nim">{getIdLabel(user.role)}</Label>
                     <Input
                       id="nim"
                       value={formData.nim}
@@ -281,20 +235,16 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                         setFormData({ ...formData, nim: e.target.value })
                       }
                       placeholder={`Masukkan ${getIdLabel(user.role)}`}
-                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="prodi">
-                      Program Studi <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="prodi">Program Studi</Label>
                     <Select
                       value={formData.prodi}
                       onValueChange={(value) =>
                         setFormData({ ...formData, prodi: value })
                       }
-                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih program studi" />
@@ -337,9 +287,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="telepon">
-                      No Telepon <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="telepon">No Telepon</Label>
                     <Input
                       id="telepon"
                       value={formData.telepon}
@@ -347,14 +295,16 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                         setFormData({ ...formData, telepon: e.target.value })
                       }
                       placeholder="08123456789"
-                      required
                     />
                   </div>
 
                   {user.role === "MAHASISWA" && (
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="dosenPembimbing">
-                        Dosen Pembimbing <span className="text-red-500">*</span>
+                      <Label htmlFor="dosenPembimbing" className="flex items-center gap-2">
+                        Dosen Pembimbing
+                        {isPembimbingLocked && (
+                          <Lock className="h-4 w-4 text-gray-400" />
+                        )}
                       </Label>
                       <Select
                         value={formData.dosenPembimbingId}
@@ -364,9 +314,9 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                             dosenPembimbingId: value,
                           })
                         }
-                        required
+                        disabled={isPembimbingLocked}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={isPembimbingLocked ? "bg-gray-50" : ""}>
                           <SelectValue placeholder="Pilih dosen pembimbing" />
                         </SelectTrigger>
                         <SelectContent>
@@ -377,6 +327,14 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                           ))}
                         </SelectContent>
                       </Select>
+                      {isPembimbingLocked && (
+                        <Alert className="mt-2 bg-amber-50 border-amber-200">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-xs text-amber-800">
+                            Dosen pembimbing sudah dipilih dan tidak dapat diubah. Hubungi admin jika perlu perubahan.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   )}
                 </div>
@@ -394,7 +352,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Foto Profil</p>
                   <p className="text-xs text-gray-400">
-                    Fitur upload foto akan segera hadir
+                    Foto dikelola melalui akun Google
                   </p>
                 </div>
               </div>
@@ -408,7 +366,6 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
             size="lg"
             disabled={isSubmitting}
             className="bg-blue-600 hover:bg-blue-700"
-            onClick={handleSubmit}
           >
             {isSubmitting ? (
               <>
@@ -423,7 +380,7 @@ export function ProfileClient({ user, dosenList = [] }: ProfileClientProps) {
             )}
           </Button>
         </div>
-      </div>
+      </form>
 
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="sm:max-w-md">

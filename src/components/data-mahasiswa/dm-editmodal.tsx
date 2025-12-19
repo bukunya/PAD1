@@ -7,6 +7,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,11 +28,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { updateMahasiswaProfileByAdmin } from "@/lib/actions/profile/adminEditMahasiswaProfile";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { RoleChangeConfirmationModal } from "./dm-rolechangemodal";
 
 interface MahasiswaData {
@@ -53,6 +62,15 @@ export function EditMahasiswaModal({
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [showRoleConfirmation, setShowRoleConfirmation] = useState(false);
+  
+  // Dialog states
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  
+  // Form validation errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  
   const [formData, setFormData] = useState({
     name: "",
     prodi: "",
@@ -70,12 +88,52 @@ export function EditMahasiswaModal({
         role: mahasiswa.role,
         dosenPembimbingId: mahasiswa.dosenPembimbingId || "",
       });
+      // Clear errors when modal opens with new data
+      setValidationErrors({});
     }
   }, [mahasiswa]);
+
+  // Validate form before submit
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Validate name
+    if (!formData.name.trim()) {
+      errors.name = "Nama lengkap wajib diisi";
+    } else if (formData.name.length > 100) {
+      errors.name = "Nama terlalu panjang (maksimal 100 karakter)";
+    }
+
+    // Validate phone
+    if (formData.telepon && formData.telepon.trim()) {
+      const phoneRegex = /^(\+62|62|0)[8-9][0-9]{7,11}$/;
+      if (!phoneRegex.test(formData.telepon.trim())) {
+        errors.telepon = "Format nomor telepon tidak valid. Contoh: 08123456789";
+      }
+    }
+
+    // Validate prodi
+    if (!formData.prodi) {
+      errors.prodi = "Program studi wajib dipilih";
+    }
+
+    // Validate dosen pembimbing for MAHASISWA
+    if (formData.role === "MAHASISWA" && !formData.dosenPembimbingId) {
+      errors.dosenPembimbingId = "Dosen pembimbing wajib dipilih untuk mahasiswa";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mahasiswa) return;
+
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
 
     // Check if role is changing from MAHASISWA to DOSEN
     if (mahasiswa.role === "MAHASISWA" && formData.role === "DOSEN") {
@@ -83,7 +141,7 @@ export function EditMahasiswaModal({
       return;
     }
 
-    // If no role change or other changes, proceed directly
+    // If no role change, proceed directly
     await saveChanges();
   };
 
@@ -91,13 +149,19 @@ export function EditMahasiswaModal({
     if (!mahasiswa) return;
 
     setIsSaving(true);
+    setValidationErrors({});
+
     try {
       const formDataObj = new FormData();
-      formDataObj.append("name", formData.name);
+      formDataObj.append("name", formData.name.trim());
       formDataObj.append("prodi", formData.prodi);
-      formDataObj.append("telepon", formData.telepon);
+      formDataObj.append("telepon", formData.telepon.trim());
       formDataObj.append("role", formData.role);
-      formDataObj.append("dosenPembimbingId", formData.dosenPembimbingId);
+      
+      // Only send dosenPembimbingId if role is MAHASISWA
+      if (formData.role === "MAHASISWA") {
+        formDataObj.append("dosenPembimbingId", formData.dosenPembimbingId);
+      }
 
       const result = await updateMahasiswaProfileByAdmin(
         mahasiswa.id,
@@ -105,15 +169,28 @@ export function EditMahasiswaModal({
       );
 
       if (result.success) {
-        toast.success("Data mahasiswa berhasil diperbarui");
+        setShowSuccessDialog(true);
         router.refresh();
-        onClose();
       } else {
-        toast.error(result.error || "Gagal memperbarui data");
+        // Handle field-specific errors
+        if (result.fieldErrors) {
+          const formattedErrors: Record<string, string> = {};
+          Object.entries(result.fieldErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              formattedErrors[field] = messages[0];
+            }
+          });
+          setValidationErrors(formattedErrors);
+        } else {
+          // General error
+          setErrorMessage(result.error || "Terjadi kesalahan saat memperbarui data");
+          setShowErrorDialog(true);
+        }
       }
     } catch (error) {
       console.error("Error updating mahasiswa:", error);
-      toast.error("Terjadi kesalahan saat memperbarui data");
+      setErrorMessage("Terjadi kesalahan pada sistem. Silakan coba lagi.");
+      setShowErrorDialog(true);
     } finally {
       setIsSaving(false);
       setShowRoleConfirmation(false);
@@ -128,10 +205,28 @@ export function EditMahasiswaModal({
     setShowRoleConfirmation(false);
   };
 
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
+    onClose();
+  };
+
+  const handleErrorDialogClose = () => {
+    setShowErrorDialog(false);
+  };
+
+  // Clear validation error when field is modified
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (validationErrors[field]) {
+      setValidationErrors({ ...validationErrors, [field]: "" });
+    }
+  };
+
   if (!mahasiswa) return null;
 
   return (
     <>
+      {/* Role Change Confirmation Modal */}
       <RoleChangeConfirmationModal
         isOpen={showRoleConfirmation}
         onClose={handleRoleConfirmClose}
@@ -140,6 +235,51 @@ export function EditMahasiswaModal({
         image={mahasiswa.image}
       />
 
+      {/* Success Dialog */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 rounded-full">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <AlertDialogTitle>Berhasil!</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              Data mahasiswa berhasil diperbarui.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleSuccessDialogClose}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Error Dialog */}
+      <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-red-100 rounded-full">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <AlertDialogTitle>Gagal Menyimpan</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              {errorMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleErrorDialogClose}>
+              Coba Lagi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Main Edit Modal */}
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
@@ -149,6 +289,7 @@ export function EditMahasiswaModal({
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Profile Picture */}
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 rounded-full">
                 <AvatarImage
@@ -167,7 +308,23 @@ export function EditMahasiswaModal({
               </div>
             </div>
 
+            {/* General Form Error Alert */}
+            {Object.keys(validationErrors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <p className="font-semibold mb-1">Terdapat kesalahan pada form:</p>
+                  <ul className="text-sm list-disc list-inside space-y-1">
+                    {Object.entries(validationErrors).map(([field, error]) => (
+                      <li key={field}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
+              {/* Name */}
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="name">
                   Nama Lengkap <span className="text-red-500">*</span>
@@ -175,14 +332,17 @@ export function EditMahasiswaModal({
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => handleFieldChange("name", e.target.value)}
                   placeholder="Masukkan nama lengkap"
+                  className={validationErrors.name ? "border-red-500" : ""}
                   required
                 />
+                {validationErrors.name && (
+                  <p className="text-xs text-red-600">{validationErrors.name}</p>
+                )}
               </div>
 
+              {/* NIM (Disabled) */}
               <div className="space-y-2">
                 <Label htmlFor="nim">NIM</Label>
                 <Input
@@ -196,6 +356,7 @@ export function EditMahasiswaModal({
                 </p>
               </div>
 
+              {/* Email (Disabled) */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -209,15 +370,16 @@ export function EditMahasiswaModal({
                 </p>
               </div>
 
+              {/* Prodi */}
               <div className="space-y-2">
-                <Label htmlFor="prodi">Program Studi</Label>
+                <Label htmlFor="prodi">
+                  Program Studi <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={formData.prodi}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, prodi: value })
-                  }
+                  onValueChange={(value) => handleFieldChange("prodi", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={validationErrors.prodi ? "border-red-500" : ""}>
                     <SelectValue placeholder="Pilih program studi" />
                   </SelectTrigger>
                   <SelectContent>
@@ -235,20 +397,29 @@ export function EditMahasiswaModal({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {validationErrors.prodi && (
+                  <p className="text-xs text-red-600">{validationErrors.prodi}</p>
+                )}
               </div>
 
+              {/* Telepon */}
               <div className="space-y-2">
                 <Label htmlFor="telepon">No. Telepon</Label>
                 <Input
                   id="telepon"
                   value={formData.telepon}
-                  onChange={(e) =>
-                    setFormData({ ...formData, telepon: e.target.value })
-                  }
+                  onChange={(e) => handleFieldChange("telepon", e.target.value)}
                   placeholder="08xxxxxxxxxx"
+                  className={validationErrors.telepon ? "border-red-500" : ""}
                 />
+                {validationErrors.telepon ? (
+                  <p className="text-xs text-red-600">{validationErrors.telepon}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">Format: 08123456789</p>
+                )}
               </div>
 
+              {/* Role */}
               <div className="space-y-2">
                 <Label htmlFor="role">
                   Role <span className="text-red-500">*</span>
@@ -256,7 +427,7 @@ export function EditMahasiswaModal({
                 <Select
                   value={formData.role}
                   onValueChange={(value: "MAHASISWA" | "DOSEN") =>
-                    setFormData({ ...formData, role: value })
+                    handleFieldChange("role", value)
                   }
                   disabled={mahasiswa.role === "DOSEN"}
                 >
@@ -279,16 +450,19 @@ export function EditMahasiswaModal({
                 )}
               </div>
 
+              {/* Dosen Pembimbing (Only for MAHASISWA) */}
               {formData.role === "MAHASISWA" && (
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="dosen">Dosen Pembimbing</Label>
+                  <Label htmlFor="dosen">
+                    Dosen Pembimbing <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={formData.dosenPembimbingId}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, dosenPembimbingId: value })
+                      handleFieldChange("dosenPembimbingId", value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={validationErrors.dosenPembimbingId ? "border-red-500" : ""}>
                       <SelectValue placeholder="Pilih dosen pembimbing" />
                     </SelectTrigger>
                     <SelectContent>
@@ -299,6 +473,9 @@ export function EditMahasiswaModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  {validationErrors.dosenPembimbingId && (
+                    <p className="text-xs text-red-600">{validationErrors.dosenPembimbingId}</p>
+                  )}
                 </div>
               )}
             </div>

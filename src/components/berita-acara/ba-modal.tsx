@@ -148,7 +148,6 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-              {/* Data Mahasiswa - For DOSEN and ADMIN */}
               {(userRole === "DOSEN" || userRole === "ADMIN") && (
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
                   <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -186,7 +185,6 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
                 </div>
               )}
 
-              {/* Judul Tugas Akhir */}
               <div className="bg-white rounded-xl p-5 border border-gray-200">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
@@ -203,7 +201,6 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
                 </div>
               </div>
 
-              {/* Informasi Jadwal */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-200">
                 <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-gray-600" />
@@ -260,7 +257,6 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
                 </div>
               </div>
 
-              {/* Tim Penguji */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-200">
                 <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Users className="h-5 w-5 text-gray-600" />
@@ -303,53 +299,35 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
                 </div>
               </div>
 
-              {/* Berkas Download - For DOSEN and ADMIN */}
-              {(userRole === "DOSEN" || userRole === "ADMIN") &&
-                data.berkasUrl && (
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-base font-semibold text-gray-900">
-                            Dokumen Tugas Akhir
-                          </p>
-                          <p className="text-sm text-gray-600 mt-0.5">
-                            File PDF tersedia untuk diunduh
-                          </p>
-                        </div>
+              {/* UPDATED: Berkas now visible for all roles including MAHASISWA */}
+              {data.berkasUrl && (
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0 h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <FileText className="h-6 w-6 text-white" />
                       </div>
-                      <Button
-                        onClick={handleDownload}
-                        className="bg-blue-600 hover:bg-blue-700 flex-shrink-0"
-                        size="default"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+                      <div>
+                        <p className="text-base font-semibold text-gray-900">
+                          Dokumen Tugas Akhir
+                        </p>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          File PDF tersedia untuk diunduh
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      onClick={handleDownload}
+                      className="bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+                      size="default"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
                   </div>
-                )}
+                </div>
+              )}
 
-              {/* Catatan - Only for MAHASISWA
-              {userRole === "MAHASISWA" && (
-                <Alert className="bg-amber-50 border-amber-200">
-                  <AlertCircle className="h-5 w-5 text-amber-600" />
-                  <AlertDescription>
-                    <p className="font-semibold text-gray-900 mb-1.5 text-sm">
-                      Catatan Penting
-                    </p>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      Silakan hadir 15 menit sebelum ujian dimulai dan membawa
-                      dokumen cetak yang diperlukan.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              )} */}
-
-              {/* Info Admin - Only for ADMIN */}
               {userRole === "ADMIN" && (
                 <Alert className="bg-green-50 border-green-200">
                   <CheckCircle className="h-5 w-5 text-green-600" />
@@ -367,7 +345,6 @@ export default function BAModal({ ujianId, userRole, onClose }: BAModalProps) {
               )}
             </div>
 
-            {/* Action Button - Fixed at bottom */}
             <div className="flex-shrink-0 px-6 py-4 border-t bg-gray-50">
               <Button
                 variant="outline"

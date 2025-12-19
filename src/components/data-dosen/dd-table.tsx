@@ -6,7 +6,7 @@ import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { EditDosenModal } from "./dd-editmodal";
 import { DeleteModal } from "../shared/dddm-deletemodal";
-import { hapusDataDsn } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
+import { hapusDataDsn, cekDsnData } from "@/lib/actions/statistikDataMhsDsn/hapusDataMhsDsn";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -26,6 +26,20 @@ interface DosenTableProps {
   currentPage: number;
 }
 
+interface ActiveSchedule {
+  tanggalUjian: Date | null; // Allow null
+  jamMulai: Date | null;     // Allow null
+  jamSelesai: Date | null;   // Allow null
+  ruangan?: {
+    nama: string;
+  } | null;                  // Allow null
+  mahasiswa: {
+    name: string | null;     // Align with your error message
+    nim: string | null;      // Align with your error message
+  };
+  judul: string;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 export function DosenTable({ dosen }: DosenTableProps) {
@@ -34,6 +48,8 @@ export function DosenTable({ dosen }: DosenTableProps) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedDosen, setSelectedDosen] = useState<DosenData | null>(null);
+  const [activeSchedules, setActiveSchedules] = useState<ActiveSchedule[]>([]);
+  const [isCheckingSchedules, setIsCheckingSchedules] = useState(false);
 
   const totalPages = Math.ceil(dosen.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -45,9 +61,44 @@ export function DosenTable({ dosen }: DosenTableProps) {
     setEditModalOpen(true);
   };
 
-  const handleDelete = (dsn: DosenData) => {
+  // ✅ Check for active schedules before showing delete modal
+  const handleDelete = async (dsn: DosenData) => {
     setSelectedDosen(dsn);
-    setDeleteModalOpen(true);
+    setIsCheckingSchedules(true);
+
+    try {
+      const result = await cekDsnData(dsn.id);
+
+      if (result.success && result.data) {
+        // Combine pembimbing and penguji schedules
+        const allSchedules: ActiveSchedule[] = [
+          ...result.data.dosenPembimbing.map((ujian) => ({
+            tanggalUjian: ujian.tanggalUjian,
+            jamMulai: ujian.jamMulai,
+            jamSelesai: ujian.jamSelesai,
+            ruangan: ujian.ruangan,
+            mahasiswa: ujian.mahasiswa,
+            judul: ujian.judul,
+          })),
+          ...result.data.dosenPenguji.map((item) => ({
+            tanggalUjian: item.ujian.tanggalUjian,
+            jamMulai: item.ujian.jamMulai,
+            jamSelesai: item.ujian.jamSelesai,
+            ruangan: item.ujian.ruangan,
+            mahasiswa: item.ujian.mahasiswa,
+            judul: item.ujian.judul,
+          })),
+        ];
+
+        setActiveSchedules(allSchedules);
+      }
+    } catch (error) {
+      console.error("Error checking schedules:", error);
+      toast.error("Gagal memeriksa jadwal dosen");
+    } finally {
+      setIsCheckingSchedules(false);
+      setDeleteModalOpen(true);
+    }
   };
 
   const confirmDelete = async () => {
@@ -195,7 +246,8 @@ export function DosenTable({ dosen }: DosenTableProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(dsn)}
-                          className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          disabled={isCheckingSchedules}
+                          className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -271,10 +323,14 @@ export function DosenTable({ dosen }: DosenTableProps) {
 
       <DeleteModal
         isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setActiveSchedules([]);
+        }}
         onConfirm={confirmDelete}
         userName={selectedDosen?.name || ""}
         userType="dosen"
+        activeSchedules={activeSchedules}
       />
     </>
   );

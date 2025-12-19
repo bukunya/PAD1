@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -82,6 +82,21 @@ export function TimelineItem({ notification, isLast }: TimelineItemProps) {
         <div className="text-base text-gray-700 mb-2">
           {notification.message}
         </div>
+
+        {/* File link if exists */}
+        {notification.ujian?.berkasUrl && (
+          <div className="mt-2">
+            <a
+              href={notification.ujian.berkasUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+            >
+              <FileText className="h-4 w-4" />
+              Lihat Berkas (PDF)
+            </a>
+          </div>
+        )}
 
         {/* Relative Time */}
         <div className="text-sm text-muted-foreground">

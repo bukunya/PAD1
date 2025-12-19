@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 interface RiwayatUjianData {
   id: string;
@@ -110,8 +110,20 @@ export function RiwayatUjianTable({ data }: RiwayatUjianTableProps) {
           <tbody className="divide-y divide-gray-200">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  Belum ada riwayat ujian.
+                <td colSpan={5} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="rounded-full bg-gray-100 p-4">
+                      <Calendar className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-base font-medium text-gray-900">
+                        Belum Ada Riwayat Ujian
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Riwayat ujian yang telah selesai dilaksanakan akan muncul di sini
+                      </p>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (

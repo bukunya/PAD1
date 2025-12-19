@@ -65,6 +65,7 @@ export async function getNotifications(page = 1, limit = 10) {
         ujian: {
           select: {
             judul: true,
+            berkasUrl: true,
             tanggalUjian: true,
             jamMulai: true,
             mahasiswa: {

@@ -103,6 +103,11 @@ export function PenjadwalanModal({
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [jamSelesaiManuallySet, setJamSelesaiManuallySet] = useState(false);
 
+  // ✅ Get tomorrow's date for minimum date
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split("T")[0];
+
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
@@ -255,6 +260,16 @@ export function PenjadwalanModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation: prevent scheduling on the same day (H)
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    if (formData.tanggalUjian === todayStr) {
+      setDialogMessage("Penjadwalan tidak dapat dilakukan di hari yang sama");
+      setShowErrorDialog(true);
+      return;
+    }
+
     setIsProcessing(true);
     setFieldErrors({});
 
@@ -318,7 +333,7 @@ export function PenjadwalanModal({
     <>
       {/* Main Modal */}
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col sm:sm:max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col sm:max-w-4xl">
           <DialogHeader className="flex-shrink-0 pb-4 border-b">
             <DialogTitle className="flex items-center gap-2 text-xl">
               <CalendarIcon className="h-6 w-6 text-blue-600" />
@@ -408,7 +423,7 @@ export function PenjadwalanModal({
                         <Input
                           id="tanggalUjian"
                           type="date"
-                          min={new Date().toISOString().split("T")[0]}
+                          min={minDate}
                           value={formData.tanggalUjian}
                           onChange={(e) =>
                             handleInputChange("tanggalUjian", e.target.value)
@@ -422,6 +437,10 @@ export function PenjadwalanModal({
                             {fieldErrors.tanggalUjian[0]}
                           </p>
                         )}
+                        {/* ✅ NEW: Helper text untuk same-day prevention */}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Penjadwalan tidak dapat dilakukan di hari yang sama
+                        </p>
                       </div>
 
                       <div className="space-y-2">

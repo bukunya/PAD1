@@ -13,7 +13,7 @@ import { useActionState, useEffect, useState } from "react";
 import { DataProfile } from "@/lib/actions/formPengajuan/dataProfile";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "../ui/alert";
-import { AlertCircle, CheckCircle, FileUp, Loader2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, FileUp, Loader2, XCircle, Lock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileErrorModal } from "./fp-errormodal";
 
-// Komponen tombol terpisah untuk menampilkan status "pending"
+interface UserProfile {
+  id: string;
+  name: string | null;
+  nim: string | null;
+  prodi: string | null;
+  departemen: string | null;
+  dosenPembimbingId: string | null; 
+  dosenPembimbing: string | null;
+  hasActiveSubmission?: boolean;
+  submissionStatus?: string;
+}
+
 function SubmitButton({ hasFile, disabled }: { hasFile: boolean; disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
@@ -50,16 +61,12 @@ export default function FpBottom() {
   const router = useRouter();
   const initialState: FormState = { success: false, message: "" };
   const [state, formAction] = useActionState(submitBerkas, initialState);
-  const [dosenPembimbingId, setDosenPembimbingId] = useState<string>("");
-  const [dosenPembimbingName, setDosenPembimbingName] = useState<string>("");
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // State untuk Alert Dialog
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
-  
-  // State untuk File Error Modal
   const [showFileErrorModal, setShowFileErrorModal] = useState(false);
   const [fileErrorMessage, setFileErrorMessage] = useState("");
 
@@ -68,8 +75,7 @@ export default function FpBottom() {
       try {
         const result = await DataProfile();
         if (result.success && result.data) {
-          setDosenPembimbingId(result.data.dosenPembimbingId || "");
-          setDosenPembimbingName(result.data.dosenPembimbing || "");
+          setUserData(result.data as UserProfile);
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -80,83 +86,35 @@ export default function FpBottom() {
     loadProfile();
   }, []);
 
-  // Handle success/error dari form submission
   useEffect(() => {
     if (state.message) {
-      if (state.success) {
-        setShowSuccessDialog(true);
-      } else {
-        setShowErrorDialog(true);
-      }
+      if (state.success) setShowSuccessDialog(true);
+      else setShowErrorDialog(true);
     }
   }, [state]);
 
-  const handleSuccessDialogClose = () => {
-    setShowSuccessDialog(false);
-    router.push("/dashboard");
-  };
-
-  const handleErrorDialogClose = () => {
-    setShowErrorDialog(false);
-  };
-
-  const handleFileErrorClose = () => {
-    setShowFileErrorModal(false);
-    setFileErrorMessage("");
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  
-  if (file) {
-    // Validasi tipe file
-    if (file.type !== "application/pdf") {
-      setFileErrorMessage("File yang Anda upload bukan format PDF. Silakan upload file dengan format PDF.");
-      setShowFileErrorModal(true);
-      e.target.value = "";
-      setSelectedFile(null);
-      return;
-    }
-
-    // Validasi ukuran file (10MB = 10 * 1024 * 1024 bytes)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-      setFileErrorMessage(
-        `Ukuran file terlalu besar (${fileSizeMB} MB). Maksimal ukuran file adalah 10 MB. Silakan kompres atau pilih file yang lebih kecil.`
-      );
-      setShowFileErrorModal(true);
-      e.target.value = "";
-      setSelectedFile(null);
-      return;
-    }
-
-    // PENTING: Baca file sebagai base64 untuk file > 1MB
-    // Ini menghindari masalah dengan FormData untuk file besar
-    if (file.size > 1 * 1024 * 1024) {
-      try {        
-        // Create a new File-like object with base64 flag
-        const optimizedFile = new File([file], file.name, { 
-          type: file.type,
-          lastModified: file.lastModified 
-        });
-        
-        // Store both original and base64
-        setSelectedFile(optimizedFile);
-        
-      } catch (error) {
-        console.error("Error processing file:", error);
-        setFileErrorMessage("Gagal memproses file. Silakan coba lagi.");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf") {
+        setFileErrorMessage("File yang Anda upload bukan format PDF. Silakan upload file dengan format PDF.");
         setShowFileErrorModal(true);
         e.target.value = "";
         setSelectedFile(null);
         return;
       }
-    } else {
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        setFileErrorMessage(`Ukuran file terlalu besar (${fileSizeMB} MB). Maksimal ukuran file adalah 10 MB.`);
+        setShowFileErrorModal(true);
+        e.target.value = "";
+        setSelectedFile(null);
+        return;
+      }
       setSelectedFile(file);
     }
-  }
-};
+  };
 
   if (isLoadingProfile) {
     return (
@@ -168,19 +126,29 @@ export default function FpBottom() {
     );
   }
 
-  // Check jika tidak ada dosen pembimbing
-  const disabledBecauseNoPembimbing = !dosenPembimbingId;
+  const hasActive = !!userData?.hasActiveSubmission;
+  const noPembimbing = !userData?.dosenPembimbingId;
+  const isDisabled = noPembimbing || hasActive;
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      MENUNGGU_VERIFIKASI: "Menunggu Verifikasi",
+      DITERIMA: "Diterima",
+      DITOLAK: "Ditolak",
+      DIJADWALKAN: "Dijadwalkan",
+      SELESAI: "Selesai"
+    };
+    return statusMap[status] || status;
+  };
 
   return (
     <>
-      {/* File Error Modal */}
-      <FileErrorModal
-        isOpen={showFileErrorModal}
-        onClose={handleFileErrorClose}
-        errorMessage={fileErrorMessage}
+      <FileErrorModal 
+        isOpen={showFileErrorModal} 
+        onClose={() => setShowFileErrorModal(false)} 
+        errorMessage={fileErrorMessage} 
       />
 
-      {/* Success Dialog */}
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -195,14 +163,13 @@ export default function FpBottom() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleSuccessDialogClose} className="w-full sm:w-auto">
+            <AlertDialogAction onClick={() => router.push("/dashboard")}>
               Kembali ke Dashboard
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error Dialog */}
       <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -217,7 +184,7 @@ export default function FpBottom() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleErrorDialogClose} className="w-full sm:w-auto">
+            <AlertDialogAction onClick={() => setShowErrorDialog(false)}>
               Coba Lagi
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -230,64 +197,77 @@ export default function FpBottom() {
             <CardTitle className="text-2xl font-bold">Upload Berkas</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Alert jika tidak ada dosen pembimbing */}
-            {disabledBecauseNoPembimbing && (
-              <Alert variant="destructive" className="mb-4">
+            {/* Alert - Active Submission */}
+            {hasActive && (
+              <Alert className="mb-6 border-blue-300 bg-blue-50">
+                <Lock className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-sm leading-relaxed">
+                  <span className="font-semibold text-blue-900">Form Pengajuan Tidak Tersedia.</span>
+                  {" "}Anda memiliki pengajuan aktif dengan status: {" "} 
+                  <span className="font-semibold text-blue-700">
+                    {getStatusLabel(userData?.submissionStatus || "")}
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Alert - No Pembimbing */}
+            {noPembimbing && !hasActive && (
+              <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Informasi dosen pembimbing tidak tersedia. Silakan lengkapi profil untuk menentukan dosen pembimbing sebelum melakukan pengajuan.
+                <AlertDescription className="text-sm leading-relaxed">
+                  <span className="font-semibold">Dosen pembimbing belum ditentukan.</span>
+                  {" "}Silakan lengkapi profil Anda terlebih dahulu.{" "}
+                  <button 
+                    onClick={() => router.push("/profile")}
+                    className="underline font-medium hover:no-underline"
+                  >
+                    Lengkapi Profil →
+                  </button>
                 </AlertDescription>
               </Alert>
             )}
 
             <form action={formAction} className="space-y-6">
-              {/* Hidden inputs */}
-              <input type="hidden" name="dosenPembimbingId" value={dosenPembimbingId} />
-              <input type="hidden" name="dosenPembimbingName" value={dosenPembimbingName} />
+              <input type="hidden" name="dosenPembimbingId" value={userData?.dosenPembimbingId || ""} />
+              <input type="hidden" name="dosenPembimbingName" value={userData?.dosenPembimbing || ""} />
 
-              {/* Judul Tugas Akhir */}
               <div className="space-y-2">
                 <Label htmlFor="judul" className="text-sm font-medium">
                   Judul Tugas Akhir
                 </Label>
-                <Input
-                  id="judul"
-                  name="judul"
+                <Input 
+                  id="judul" 
+                  name="judul" 
                   type="text"
-                  required
-                  placeholder="Masukkan Judul Tugas Akhir"
+                  required 
+                  placeholder="Masukkan Judul Tugas Akhir" 
+                  disabled={isDisabled}
                   className="w-full"
-                  disabled={disabledBecauseNoPembimbing}
                 />
               </div>
 
-              {/* Dosen Pembimbing */}
               <div className="space-y-2">
                 <Label htmlFor="dosenPembimbingName" className="text-sm font-medium">
                   Dosen Pembimbing
                 </Label>
-                <Input
+                <Input 
                   id="dosenPembimbingName"
-                  name="dosenPembimbingNameDisplay"
-                  value={dosenPembimbingName || "Tidak ada data"}
-                  disabled
+                  value={userData?.dosenPembimbing || "Tidak ada data"} 
+                  disabled 
                   className="bg-gray-50 cursor-not-allowed"
-                  aria-readonly
                 />
               </div>
 
-              {/* Upload Berkas */}
               <div className="space-y-2">
                 <Label htmlFor="berkas" className="text-sm font-medium">
                   Upload Berkas
                 </Label>
                 <div className="flex items-center gap-4">
-                  <label
-                    htmlFor="berkas"
+                  <label 
+                    htmlFor="berkas" 
                     className={`flex items-center gap-2 px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg transition-colors ${
-                      disabledBecauseNoPembimbing
-                        ? "cursor-not-allowed opacity-50"
-                        : "cursor-pointer hover:bg-blue-100"
+                      isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-blue-100"
                     }`}
                   >
                     <FileUp className="w-5 h-5 text-blue-500" />
@@ -297,15 +277,15 @@ export default function FpBottom() {
                   </label>
                   {!selectedFile && <span className="text-sm text-gray-500">PDF (Max 10MB)</span>}
                 </div>
-                <Input
-                  id="berkas"
-                  name="berkas"
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  required
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={disabledBecauseNoPembimbing}
+                <Input 
+                  id="berkas" 
+                  name="berkas" 
+                  type="file" 
+                  accept=".pdf,application/pdf" 
+                  required 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                  disabled={isDisabled} 
                 />
                 {selectedFile && (
                   <p className="text-sm text-gray-600">
@@ -315,9 +295,8 @@ export default function FpBottom() {
                 )}
               </div>
 
-              {/* Submit Button */}
               <div className="flex justify-end pt-4">
-                <SubmitButton hasFile={!!selectedFile} disabled={disabledBecauseNoPembimbing} />
+                <SubmitButton hasFile={!!selectedFile} disabled={isDisabled} />
               </div>
             </form>
           </CardContent>

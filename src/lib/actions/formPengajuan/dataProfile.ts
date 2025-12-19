@@ -11,6 +11,8 @@ interface UserProfile {
   departemen: string | null;
   dosenPembimbingId: string | null; 
   dosenPembimbing: string | null;
+  hasActiveSubmission?: boolean;
+  submissionStatus?: string | null;
 }
 
 export async function DataProfile() {
@@ -74,6 +76,22 @@ export async function DataProfile() {
       };
     }
 
+    // Check if user has active submission
+    const latestSubmission = await prisma.ujian.findFirst({
+      where: {
+        mahasiswaId: session.user.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    const hasActiveSubmission = latestSubmission !== null;
+    const submissionStatus = latestSubmission?.status || null;
+
     const cleaned: UserProfile = {
       id: user.id,
       name: user.name,
@@ -82,11 +100,16 @@ export async function DataProfile() {
       departemen: user.departemen,
       dosenPembimbingId: user.dosenPembimbingId, 
       dosenPembimbing: user.dosenPembimbing ? user.dosenPembimbing.name : null,
+      // Include submission info inside `data` for easier client consumption
+      hasActiveSubmission,
+      submissionStatus: submissionStatus || null,
     };
 
     return {
       success: true,
       data: cleaned,
+      hasActiveSubmission,
+      submissionStatus,
     };
   } catch (error) {
     console.error("Error fetching user profile:", error);

@@ -66,7 +66,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [ujianData, setUjianData] = useState<UjianData | null>(null);
 
-  // Form state
   const [formData, setFormData] = useState({
     tanggalUjian: "",
     jamMulai: "",
@@ -107,7 +106,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       }
 
       try {
-        // Load ujian details and dosen list in parallel
         const [ujianResult, dosensResult] = await Promise.all([
           getUjianDetails(resolvedParams.id),
           getAllDosen(),
@@ -125,7 +123,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         if (ujianResult.data) {
           setUjianData(ujianResult.data as UjianData);
 
-          // Pre-fill form if data exists
           if (ujianResult.data.tanggalUjian) {
             const tanggal = new Date(ujianResult.data.tanggalUjian);
             setFormData((prev) => ({
@@ -157,7 +154,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 .padStart(2, "0")}`,
             }));
           } else if (ujianResult.data.jamMulai) {
-            // Auto-fill jam selesai to 2 hours after jam mulai if not set
             const jamMulai = new Date(ujianResult.data.jamMulai);
             jamMulai.setUTCHours(jamMulai.getUTCHours() + 2);
             setFormData((prev) => ({
@@ -184,7 +180,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             }));
           }
 
-          // Trigger availability check if we have all required data
           if (
             ujianResult.data.tanggalUjian &&
             ujianResult.data.jamMulai &&
@@ -202,7 +197,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             })
           );
           setDosenList(allDosen);
-          setAvailableDosen(allDosen); // Initially show all
+          setAvailableDosen(allDosen);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -215,7 +210,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     loadData();
   }, [session, status, resolvedParams.id]);
 
-  // Check dosen availability when date/time changes
   useEffect(() => {
     async function checkAvailability() {
       if (
@@ -248,7 +242,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         if (dosenResult.success && dosenResult.data) {
           setAvailableDosen(dosenResult.data.available);
 
-          // Clear selected dosen if they become unavailable
           if (formData.dosenPenguji1) {
             const isPenguji1Available = dosenResult.data.available.some(
               (d) => d.id === formData.dosenPenguji1
@@ -284,7 +277,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         if (ruanganResult.success && ruanganResult.data) {
           setAvailableRuangan(ruanganResult.data.available);
 
-          // Clear selected ruangan if it becomes unavailable
           if (formData.ruanganId) {
             const isRuanganAvailable = ruanganResult.data.available.some(
               (r) => r.id === formData.ruanganId
@@ -330,7 +322,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // Auto-fill jam selesai when jam mulai changes (2 hours default)
       if (field === "jamMulai" && value && !prev.jamSelesai) {
         const [hours, minutes] = value.split(":").map(Number);
         const endTime = new Date();
@@ -346,7 +337,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       return newData;
     });
 
-    // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors((prev) => ({ ...prev, [field]: [] }));
     }
@@ -354,6 +344,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent scheduling for today's date on client-side as extra guard
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    if (formData.tanggalUjian === todayStr) {
+      setIsSaving(false);
+      setMessage({
+        type: "error",
+        text: "Penjadwalan tidak dapat dilakukan di hari yang sama",
+      });
+      return;
+    }
+
     setIsSaving(true);
     setMessage(null);
     setFieldErrors({});
@@ -377,7 +380,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           text: result.message || "Ujian berhasil dijadwalkan",
           calendarLink: result.calendarEventLink || undefined,
         });
-        // Reload data after successful assignment
         const ujianResult = await getUjianDetails(resolvedParams.id);
         if (ujianResult.success && ujianResult.data) {
           setUjianData(ujianResult.data as UjianData);
@@ -403,7 +405,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     }
   };
 
-  // Show loading state
   if (status === "loading" || isLoading) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -414,7 +415,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
-  // Show error if not admin
   if (!session?.user || session.user.role !== "ADMIN") {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -428,7 +428,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
-  // Show error if ujian not found
   if (!ujianData) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -440,6 +439,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
+  // Get tomorrow's date for min attribute
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split("T")[0];
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <Card>
@@ -447,7 +451,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <CardTitle>Jadwalkan Ujian</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Status Messages */}
           {message && (
             <Alert
               variant={
@@ -490,7 +493,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </Alert>
           )}
 
-          {/* Ujian Info */}
           <div className="mb-6 space-y-2 p-4 bg-muted rounded-lg">
             <h3 className="font-semibold text-lg">Informasi Ujian</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -508,20 +510,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Dosen Pembimbing (Read-only) */}
             <div className="space-y-2">
               <Label>Dosen Pembimbing</Label>
               <Input value={ujianData.dosenPembimbing.name || ""} disabled />
             </div>
 
-            {/* Tanggal Ujian */}
             <div className="space-y-2">
               <Label htmlFor="tanggalUjian">Tanggal Ujian *</Label>
               <Input
                 id="tanggalUjian"
                 name="tanggalUjian"
                 type="date"
-                min={new Date().toISOString().split("T")[0]}
+                min={minDate}
                 value={formData.tanggalUjian}
                 onChange={(e) =>
                   handleInputChange("tanggalUjian", e.target.value)
@@ -534,9 +534,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   {fieldErrors.tanggalUjian[0]}
                 </p>
               )}
+              <p className="text-xs text-gray-500">
+                Penjadwalan tidak dapat dilakukan di hari yang sama
+              </p>
             </div>
 
-            {/* Jam Mulai */}
             <div className="space-y-2">
               <Label htmlFor="jamMulai">Jam Mulai *</Label>
               <Input
@@ -555,7 +557,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Jam Selesai */}
             <div className="space-y-2">
               <Label htmlFor="jamSelesai">
                 Jam Selesai *{" "}
@@ -581,7 +582,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Ruangan */}
             <div className="space-y-2">
               <Label htmlFor="ruanganId">
                 Ruangan *
@@ -624,7 +624,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Dosen Penguji 1 */}
             <div className="space-y-2">
               <Label htmlFor="dosenPenguji1">
                 Dosen Penguji 1 *
@@ -672,7 +671,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Dosen Penguji 2 */}
             <div className="space-y-2">
               <Label htmlFor="dosenPenguji2">
                 Dosen Penguji 2 *

@@ -7,16 +7,17 @@ interface DetailUjianModalProps {
   onClose: () => void;
 }
 
-interface UjianDetail {
-  jenisUjian: string;
-  tanggalUjian: string;
-  waktuUjian: string;
-  ruangUjian: string;
-  dosenPembimbing1: string;
-  dosenPembimbing2: string;
-  dosenPenguji: string;
-  catatan: string;
-}
+  interface UjianDetail {
+    jenisUjian: string;
+    tanggalUjian: string;
+    waktuUjian: string;
+    ruangUjian: string;
+    dosenPembimbing1: string;
+    dosenPembimbing2: string;
+    dosenPenguji: string;
+    catatan: string;
+    berkasUrl?: string | null;
+  }
 
 export default function DetailUjianModal({ ujianId, onClose }: DetailUjianModalProps) {
   const [detail, setDetail] = useState<UjianDetail | null>(null);
@@ -31,33 +32,43 @@ export default function DetailUjianModal({ ujianId, onClose }: DetailUjianModalP
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  useEffect(() => {
-    fetchDetailUjian();
-  }, [ujianId]);
+    useEffect(() => {
+      fetchDetailUjian();
+    }, [ujianId]);
 
-  const fetchDetailUjian = async () => {
-    setLoading(true);
-    try {
-      // TODO: Create server action to fetch detailed ujian data
-      // For now, using mock data
-      setTimeout(() => {
-        setDetail({
-          jenisUjian: "Seminar Akhir",
-          tanggalUjian: "20 September 2025",
-          waktuUjian: "09:00 - 11:00 WIB",
-          ruangUjian: "Ruang B-203",
-          dosenPembimbing1: "Dr. Ir. Budi Santoso",
-          dosenPembimbing2: "Budi Eko, M.Kom.",
-          dosenPenguji: "Dr. Wijaya, S.T., M.Eng.",
-          catatan: "Silakan hadir 15 menit sebelum ujian dimulai dan membawa dokumen cetak.",
-        });
+    const fetchDetailUjian = async () => {
+      setLoading(true);
+      try {
+        const { getUjianDetailsForAll } = await import(
+          "@/lib/actions/detailJadwal/detailJadwal"
+        );
+        const res = await getUjianDetailsForAll(ujianId);
+        if (res.success && res.data) {
+          const uj = res.data as any;
+          setDetail({
+            jenisUjian: uj.status || "-",
+            tanggalUjian: uj.tanggalUjian
+              ? new Date(uj.tanggalUjian).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "-",
+            waktuUjian: uj.jamMulai && uj.jamSelesai ? `${uj.jamMulai} - ${uj.jamSelesai}` : "-",
+            ruangUjian: uj.ruangan?.nama || "-",
+            dosenPembimbing1: uj.dosenPembimbing?.name || "-",
+            dosenPembimbing2: uj.dosenPenguji?.[1]?.dosen?.name || "-",
+            dosenPenguji: uj.dosenPenguji?.map((p: any) => p.dosen?.name).filter(Boolean).join(", ") || "-",
+            catatan: "",
+            berkasUrl: uj.berkasUrl || null,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching ujian detail:", error);
+      } finally {
         setLoading(false);
-      }, 500);
-    } catch (error) {
-      console.error("Error fetching ujian detail:", error);
-      setLoading(false);
-    }
-  };
+      }
+    };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
@@ -149,6 +160,23 @@ export default function DetailUjianModal({ ujianId, onClose }: DetailUjianModalP
                   <p className="text-base text-gray-700">{detail.catatan}</p>
                 </div>
               </div>
+
+              {/* Berkas (preview / download) */}
+              {detail.berkasUrl && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Berkas Pengajuan
+                  </label>
+                  <a
+                    href={detail.berkasUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                  >
+                    Lihat / Unduh Berkas
+                  </a>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-12 text-center text-gray-500">

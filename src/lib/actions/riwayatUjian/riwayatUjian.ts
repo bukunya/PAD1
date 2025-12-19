@@ -34,10 +34,8 @@ interface PaginationParams {
   month?: number;
   year?: number;
   peran?: "semua" | "pembimbing" | "penguji";
-  status?: "semua" | "selesai" | "dijadwalkan";
 }
 
-// Auto update ujian DIJADWALKAN → SELESAI kalau sudah lewat
 async function updateExpiredExams() {
   try {
     const now = new Date();
@@ -88,8 +86,7 @@ export async function riwayatUjian(params: PaginationParams = {}) {
       limit = 10, 
       month, 
       year, 
-      peran = "semua",
-      status = "semua" 
+      peran = "semua"
     } = params;
     const skip = (page - 1) * limit;
 
@@ -108,18 +105,9 @@ export async function riwayatUjian(params: PaginationParams = {}) {
       };
     }
 
-    // Status filter
-    const statusCondition: Partial<Pick<Prisma.UjianWhereInput, 'status'>> = {};
-    if (status === "selesai") {
-      statusCondition.status = StatusUjian.SELESAI;
-    } else if (status === "dijadwalkan") {
-      statusCondition.status = StatusUjian.DIJADWALKAN;
-    }
-    // If "semua", no status filter is applied
+    // CHANGED: Only show SELESAI status (completed exams)
+    const statusCondition = { status: StatusUjian.SELESAI };
 
-    // ====================
-    //       DOSEN
-    // ====================
     if (role === "DOSEN") {
       let whereClause: Prisma.UjianWhereInput = {
         OR: [
@@ -185,9 +173,6 @@ export async function riwayatUjian(params: PaginationParams = {}) {
       };
     }
 
-    // ====================
-    //        ADMIN
-    // ====================
     if (role === "ADMIN") {
       const whereClause: Prisma.UjianWhereInput = {
         ...statusCondition,
